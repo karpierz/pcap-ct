@@ -279,8 +279,9 @@ class pcap(object):
             if n == 0: # timeout
                 continue
             elif n == 1:
-                callback(hdr.ts.tv_sec + (hdr.ts.tv_usec / 1000000.0),
-                         ct.cast(pkt, ct.c_char_p)[:hdr.caplen], # bytes
+                header = hdr.contents
+                callback(header.ts.tv_sec + (header.ts.tv_usec / 1000000.0),
+                         ct.cast(pkt, ct.c_char_p)[:header.caplen], # bytes
                          *args)
             elif n == -1:
                 raise KeyboardInterrupt()
@@ -331,8 +332,9 @@ class pcap(object):
             if n == 0: # timeout
                 continue
             elif n == 1:
-                return (hdr.ts.tv_sec + (hdr.ts.tv_usec / 1000000.0),
-                        ct.cast(pkt, ct.c_char_p)[:hdr.caplen]) # bytes
+                header = hdr.contents
+                return (header.ts.tv_sec + (header.ts.tv_usec / 1000000.0),
+                        ct.cast(pkt, ct.c_char_p)[:header.caplen]) # bytes
             elif n == -1:
                 raise KeyboardInterrupt()
             elif n == -2:
@@ -402,10 +404,11 @@ def __pcap_handler(arg, hdr, pkt): # with gil:
 
     ctx = ct.cast(arg, ct.POINTER(__pcap_handler_ctx)).contents
     try:
+        header   = hdr.contents
         callback = ctx.callback.value
         args     = ctx.args.value
-        callback(hdr.ts.tv_sec + (hdr.ts.tv_usec / 1000000.0),
-                 ct.cast(pkt, ct.c_char_p)[:hdr.caplen], # bytes
+        callback(header.ts.tv_sec + (header.ts.tv_usec / 1000000.0),
+                 ct.cast(pkt, ct.c_char_p)[:header.caplen], # bytes
                  *args)
     except:
         ctx.exc = sys.exc_info() #??? ct.py_object(sys.exc_info())
