@@ -1,0 +1,16 @@
+
+if 'openbsd' in sys.platform:
+
+ctypedef struct pcap_if_t:
+    pcap_if_t *next
+    char *name
+
+class bpf_timeval(ct.Structure):
+    _fields_ = [
+        ("tv_sec",  ct.c_uint)
+        ("tv_usec", ct.c_uint)
+]
+
+struct pcap_pkthdr:
+    bpf_timeval ts
+    ct.c_uint caplen
