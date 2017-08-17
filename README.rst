@@ -30,9 +30,10 @@ Prerequisites:
 License
 =======
 
-  | zlib/libpng License
-  | http://opensource.org/licenses/zlib
-  | Please refer to the bundled LICENSE file.
+  | Copyright (c) 2016-2017, Adam Karpierz
+  |
+  | Licensed under the BSD license
+  | Please refer to the LICENSE file.
 
 Authors
 =======
