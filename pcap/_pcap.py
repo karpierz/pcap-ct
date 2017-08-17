@@ -126,8 +126,10 @@ class pcap(object):
 
     def __del__(self):
 
-        if self.__pcap:
-            _pcap.close(self.__pcap)
+        try:
+            if self.__pcap: _pcap.close(self.__pcap)
+        except:
+            pass
 
     @property
     def name(self):
