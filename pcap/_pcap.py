@@ -165,7 +165,7 @@ class pcap(object):
 
         """File descriptor (or Win32 HANDLE) for capture handle."""
 
-        return _pcap_ex.fileno(self.__pcap)
+        return self.fileno()
 
     def fileno(self):
 

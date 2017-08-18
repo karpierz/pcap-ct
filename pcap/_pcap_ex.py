@@ -1,23 +1,14 @@
 # coding: utf-8
 
-#ifdef _WIN32
-# include <winsock2.h>
-# include <iphlpapi.h>
-#else
-# include <sys/types.h>
-# include <sys/ioctl.h>
-# include <sys/time.h>
-# include <fcntl.h>
-# include <signal.h>
-# include <unistd.h>
-#endif
-
 from __future__ import absolute_import
 
+import os
+import tempfile
 import socket
+import select
 import ctypes as ct
 
-from libpcap._platform import is_windows, defined
+from libpcap._platform import is_windows, is_osx, defined
 from libpcap._platform import CFUNC
 import libpcap as _pcap
 
@@ -28,11 +19,13 @@ def immediate(pcap):
     if is_windows:
         return _pcap.setmintocopy(pcap, 1)
     elif defined("BIOCIMMEDIATE"):
+        # !!! BIOCIMMEDIATE ???
         import fcntl
         n = ct.c_int(1)
         return fcntl.ioctl(_pcap.fileno(pcap), BIOCIMMEDIATE, ct.byref(n))
-    elif defined("__APPLE__"):
+    elif is_osx:
         # XXX On OSX Yosemite (10.10.3) BIOCIMMEDIATE is not defined)
+        # !!! _IOW ???
         import fcntl
         n = ct.c_int(1)
         return fcntl.ioctl(_pcap.fileno(pcap), _IOW('B', 112, ct.c_uint), ct.byref(n))
@@ -57,7 +50,7 @@ def name(name):
             return name
         try:
             idx = int(name.value[3:])
-            # sscanf(name+3, "%u", &idx) != 1 ??? czy sscanf dziala dla np: 123xyz ? 
+            # sscanf(name+3, "%u", &idx) != 1 # !!! czy sscanf dziala dla np: 123xyz ???
         except ValueError:
             return name
         if idx < 0:
@@ -74,8 +67,8 @@ def name(name):
             while pif:
                 pif = pif.contents
                 if i == idx:
-                    strncpy(__pcap_name, pif.name, ct.sizeof(__pcap_name) - 1)
-                    __pcap_name[ct.sizeof(__pcap_name) - 1] = '\0'
+                    strncpy(__pcap_name, pif.name, ct.sizeof(__pcap_name) - 1) # !!!
+                    __pcap_name[ct.sizeof(__pcap_name) - 1] = '\0'             # !!!
                     name = __pcap_name
                     break
                 i  += 1
@@ -109,8 +102,8 @@ def lookupdev(ebuf):
                 pa = pif.addresses
                 while pa:
                     pa = pa.contents
-                    addr_struct = pa.addr # (struct sockaddr_in *) pa.addr
-                    addr = addr_struct.sin_addr.S_un.S_addr  # u_long
+                    addr_struct = pa.addr # (struct sockaddr_in *) pa.addr # !!!
+                    addr = addr_struct.sin_addr.S_un.S_addr  # u_long      # !!!
                     if (addr_struct.sin_family == socket.AF_INET and
                         addr != 0 and        # 0.0.0.0
                         addr != 0x100007F):  # 127.0.0.1
@@ -136,7 +129,7 @@ def fileno(pcap):
     else:
         f = _pcap.file(pcap)  # FILE*
         if f:
-            return fileno(f) # ???
+            return fileno(f)  # !!! ???.fileno
         else:
             return _pcap.fileno(pcap)
 
@@ -146,7 +139,6 @@ def setup(pcap):
 
     # XXX - hrr, this sux
     if is_windows:
-        #ctrl_handler = ct.WINFUNCTYPE(ct.wintypes.BOOL, ct.wintypes.DWORD)(__ctrl_handler)
         ct.windll.kernel32.SetConsoleCtrlHandler(__ctrl_handler, 1) #, TRUE)
     else:
         #if 0
@@ -156,7 +148,7 @@ def setup(pcap):
         fcntl(fd, F_SETFL, n);
         """
         #endif
-        signal(SIGINT, __signal_handler)
+        signal(SIGINT, __signal_handler) # !!! ???.signal
 
 
 @CFUNC(ct.c_int, ct.POINTER(_pcap.pcap_t), ct.c_int)
@@ -217,10 +209,7 @@ def next(pcap, hdr, pkt):
 
         global __hdr, __pkt
 
-        tv   = timeval([ 1, 0 ]) # ???
-        rfds = fd_set() # ???
-
-        fd = _pcap.fileno(pcap)  # ct.int
+        fd = _pcap.fileno(pcap)
 
         while True:
 
@@ -235,14 +224,15 @@ def next(pcap, hdr, pkt):
             if _pcap.file(pcap) != None: #!!! NULL
                 return -2
 
-            FD_ZERO(ct.byref(rfds));
-            FD_SET(fd, ct.byref(rfds))    #!!! NULL, NULL
-            n = select(fd + 1, ct.byref(rfds), None, None, ct.byref(tv))  # ct.int
-            if n <= 0:
-                return n
+            try:
+                rfds, wfds, efds = select.select([fd], [], [], 1.0)
+            except:
+                return -1
+            if not rfds and not wfds and not efds:
+                return 0  # timeout
 
-        hdr = ct.pointer(__hdr) #??? *hdr = ct.pointer(__hdr)
-        pkt = __pkt             #??? *pkt = __pkt
+        hdr.contents = ct.pointer(__hdr)
+        pkt.contents = __pkt
 
         return 1
 
@@ -259,35 +249,35 @@ def compile_nopcap(snaplen, dlt, fp, str, optimize, netmask):
     try:
         _pcap.compile_nopcap
     except AttributeError:
+        ret = -1
 
-        ebuf = ct.create_string_buffer(_pcap.PCAP_ERRBUF_SIZE)
-        ret  = -1
+        try:
+            f = tempfile.NamedTemporaryFile("wb", prefix=".pypcap", suffix=".pcap",
+                                            delete=False)
+        except:
+            return ret
 
-        path = "/tmp/.pypcapXXXXXX.pcap" # char[]
-        mktemp(path)
+        try:
+            with f:
+                hdr = _pcap.file_header()
+                hdr.magic         = 0xA1B2C3D4
+                hdr.version_major = _pcap.PCAP_VERSION_MAJOR
+                hdr.version_minor = _pcap.PCAP_VERSION_MINOR
+                hdr.thiszone      = 0
+                hdr.snaplen       = snaplen
+                hdr.sigfigs       = 0
+                hdr.linktype      = dlt
+                f.fwrite(ct.byref(hdr), ct.sizeof(hdr), 1) # !!!
 
-        f = fopen(path, "w")  # FILE*
-
-        if f != None: #!!! NULL
-
-            hdr = _pcap.file_header()
-            hdr.magic         = 0xA1B2C3D4
-            hdr.version_major = _pcap.PCAP_VERSION_MAJOR
-            hdr.version_minor = _pcap.PCAP_VERSION_MINOR
-            hdr.thiszone      = 0
-            hdr.snaplen       = snaplen
-            hdr.sigfigs       = 0
-            hdr.linktype      = dlt
-            fwrite(ct.byref(hdr), ct.sizeof(hdr), 1, f)
-
-            fclose(f)
-
-            pcap = _pcap.open_offline(path, ebuf)
+            ebuf = ct.create_string_buffer(_pcap.PCAP_ERRBUF_SIZE)
+            pcap = _pcap.open_offline(f.name, ebuf)
             if pcap is not None:
-                ret = _pcap.compile(pcap, fp, str, optimize, netmask)
-                _pcap.close(pcap)
-
-            unlink(path)
+                try:
+                    ret = _pcap.compile(pcap, fp, str, optimize, netmask)
+                finally:
+                    _pcap.close(pcap)
+        finally:
+            os.unlink(f.name)
 
         return ret
     else:
