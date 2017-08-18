@@ -298,6 +298,8 @@ __got_signal = False
 
 if is_windows:
 
+    import ctypes.wintypes
+
     @CFUNC(ct.c_int, ct.POINTER(ct.POINTER(_pcap.pcap_if_t)), ct.c_char_p)
     def __findalldevs(dst, ebuf):
 

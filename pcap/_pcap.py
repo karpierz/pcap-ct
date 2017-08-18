@@ -239,13 +239,11 @@ class pcap(object):
         *args    -- optional arguments passed to callback on execution
         """
 
-        global __pcap_handler_ctx, __pcap_handler
-
-        ctx = __pcap_handler_ctx()
+        ctx = _pcap_handler_ctx()
         ctx.callback = callback
         ctx.args     = args
         ctx.exc      = None
-        n = _pcap.dispatch(self.__pcap, cnt, __pcap_handler,
+        n = _pcap.dispatch(self.__pcap, cnt, _pcap_handler,
                            ct.cast(ct.pointer(ctx), ct.POINTER(ct.c_ubyte)))
         exc = ctx.exc
         if exc is not None:
@@ -405,11 +403,9 @@ def lookupnet(dev):
 
 
 @_pcap.pcap_handler
-def __pcap_handler(arg, hdr, pkt): # with gil:
+def _pcap_handler(arg, hdr, pkt): # with gil:
 
-    global __pcap_handler_ctx
-
-    ctx = ct.cast(arg, ct.POINTER(__pcap_handler_ctx)).contents
+    ctx = ct.cast(arg, ct.POINTER(_pcap_handler_ctx)).contents
     try:
         header   = hdr.contents
         callback = ctx.callback
@@ -421,7 +417,7 @@ def __pcap_handler(arg, hdr, pkt): # with gil:
         ctx.exc = sys.exc_info()
 
 
-class __pcap_handler_ctx(ct.Structure):
+class _pcap_handler_ctx(ct.Structure):
     _fields_ = [
     ("callback", ct.py_object),
     ("args",     ct.py_object),
