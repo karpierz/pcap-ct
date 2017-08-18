@@ -99,7 +99,7 @@ class pcap(object):
 
         global dltoff
 
-        self.__ebuf = ct.create_string_buffer(256)
+        self.__ebuf = ct.create_string_buffer(_pcap.PCAP_ERRBUF_SIZE)
 
         if not name:
             cname = _pcap_ex.lookupdev(self.__ebuf)
@@ -121,6 +121,7 @@ class pcap(object):
             self.__dloff = dltoff[_pcap.datalink(self.__pcap)]
         except KeyError:
             self.__dloff = 0  # AK: added
+
         if immediate and _pcap_ex.immediate(self.__pcap) < 0:
             raise OSError("couldn't enable immediate mode")
 
@@ -246,7 +247,6 @@ class pcap(object):
         ctx.exc      = None
         n = _pcap.dispatch(self.__pcap, cnt, __pcap_handler,
                            ct.cast(ct.pointer(ctx), ct.POINTER(ct.c_ubyte)))
-                          #ct.cast(<void*>ctx,      ct.POINTER(ct.c_ubyte)))
         exc = ctx.exc
         if exc is not None:
             if sys.version_info[0] < 3:
@@ -358,7 +358,7 @@ def lookupdev():
 
     """Return the name of a network device suitable for sniffing."""
 
-    ebuf = ct.create_string_buffer(256)
+    ebuf = ct.create_string_buffer(_pcap.PCAP_ERRBUF_SIZE)
     p = _pcap_ex.lookupdev(ebuf)
     if p is None:
         raise OSError(ebuf.value)
@@ -370,7 +370,7 @@ def findalldevs():
     """Return a list of capture devices."""
 
     devs = ct.POINTER(_pcap.pcap_if_t)()
-    ebuf = ct.create_string_buffer(256)
+    ebuf = ct.create_string_buffer(_pcap.PCAP_ERRBUF_SIZE)
     status = _pcap.findalldevs(ct.byref(devs), ebuf)
     if status:
         raise OSError(ebuf.value)
@@ -397,7 +397,7 @@ def lookupnet(dev):
 
     netp  = ct.c_uint()
     maskp = ct.c_uint()
-    ebuf  = ct.create_string_buffer(256)
+    ebuf  = ct.create_string_buffer(_pcap.PCAP_ERRBUF_SIZE)
     status = _pcap.lookupnet(dev, ct.byref(netp), ct.byref(maskp), ebuf)
     if status:
         raise OSError(ebuf.value)

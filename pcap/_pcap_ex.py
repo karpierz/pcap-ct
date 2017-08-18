@@ -39,7 +39,7 @@ def immediate(pcap):
         return 0
 
 
-__pcap_name = ct.create_string_buffer(256)
+__pcap_name = ct.create_string_buffer(_pcap.PCAP_ERRBUF_SIZE)
 
 @CFUNC(ct.c_char_p, ct.c_char_p)
 def name(name):
@@ -59,7 +59,7 @@ def name(name):
             return name
 
         pifs = ct.POINTER(_pcap.pcap_if_t)()
-        ebuf = ct.create_string_buffer(128)
+        ebuf = ct.create_string_buffer(_pcap.PCAP_ERRBUF_SIZE)
         if __findalldevs(ct.byref(pifs), ebuf) == -1:
             return name
 
@@ -95,10 +95,9 @@ def lookupdev(ebuf):
         if __findalldevs(ct.byref(pifs), ebuf) == -1:
             return None
 
+        name = None
         try:  # AK added
             # Get first not 0.0.0.0 or 127.0.0.1 device
-
-            name = None
             pif  = pifs
             while pif:
                 pif = pif.contents
@@ -109,12 +108,11 @@ def lookupdev(ebuf):
                     addr = addr_struct.sin_addr.S_un.S_addr  # u_long
                     if (addr_struct.sin_family == AF_INET and
                         addr != 0 and        # 0.0.0.0
-                        addr != 0x100007f):  # 127.0.0.1
+                        addr != 0x100007F):  # 127.0.0.1
                         name = pif.name
                         break
                     pa = pa.next
                 pif = pif.next
-
         finally:
             _pcap.freealldevs(pifs)
 
