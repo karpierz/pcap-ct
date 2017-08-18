@@ -14,6 +14,7 @@
 
 from __future__ import absolute_import
 
+import socket
 import ctypes as ct
 
 from libpcap._platform import is_windows, defined
@@ -54,8 +55,12 @@ def name(name):
         # XXX - according to the WinPcap FAQ, no loopback support???
         if not name.value.startswith("eth"):
             return name
-        idx = ct.c_int(0)
-        if sscanf(name + 3, "%u", ct.byref(idx)) != 1:
+        try:
+            idx = int(name.value[3:])
+            # sscanf(name+3, "%u", &idx) != 1 ??? czy sscanf dziala dla np: 123xyz ? 
+        except ValueError:
+            return name
+        if idx < 0:
             return name
 
         pifs = ct.POINTER(_pcap.pcap_if_t)()
@@ -106,7 +111,7 @@ def lookupdev(ebuf):
                     pa = pa.contents
                     addr_struct = pa.addr # (struct sockaddr_in *) pa.addr
                     addr = addr_struct.sin_addr.S_un.S_addr  # u_long
-                    if (addr_struct.sin_family == AF_INET and
+                    if (addr_struct.sin_family == socket.AF_INET and
                         addr != 0 and        # 0.0.0.0
                         addr != 0x100007F):  # 127.0.0.1
                         name = pif.name
@@ -131,7 +136,7 @@ def fileno(pcap):
     else:
         f = _pcap.file(pcap)  # FILE*
         if f:
-            return fileno(f)
+            return fileno(f) # ???
         else:
             return _pcap.fileno(pcap)
 
