@@ -253,6 +253,24 @@ class pcap(object):
                 raise exc[0](exc[1]).with_traceback(exc[2])
         return n
 
+    def sendpacket(self, buf):
+
+        """Send a raw network packet on the interface."""
+
+        if _pcap.sendpacket(self.__pcap, buf, len(buf)) == -1:
+            raise OSError(self.geterr())
+        return len(buf)
+
+    def stats(self):
+
+        """Return a 3-tuple of the total number of packets received,
+        dropped, and dropped by the interface."""
+
+        pstat = _pcap.stat()
+        if _pcap.stats(self.__pcap, ct.byref(pstat)) < 0:
+            raise OSError(self.geterr())
+        return (pstat.ps_recv, pstat.ps_drop, pstat.ps_ifdrop)
+
     def loop(self, cnt, callback, *args):
 
         """Processing packets with a user callback during a loop.
@@ -292,24 +310,6 @@ class pcap(object):
             #   ??? what about other/unknown codes?
             if i == cnt: break
             i += 1
-
-    def sendpacket(self, buf):
-
-        """Send a raw network packet on the interface."""
-
-        if _pcap.sendpacket(self.__pcap, buf, len(buf)) == -1:
-            raise OSError(self.geterr())
-        return len(buf)
-
-    def stats(self):
-
-        """Return a 3-tuple of the total number of packets received,
-        dropped, and dropped by the interface."""
-
-        pstat = _pcap.stat()
-        if _pcap.stats(self.__pcap, ct.byref(pstat)) < 0:
-            raise OSError(self.geterr())
-        return (pstat.ps_recv, pstat.ps_drop, pstat.ps_ifdrop)
 
     def geterr(self):
 
