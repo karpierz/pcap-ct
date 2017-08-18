@@ -180,9 +180,9 @@ class pcap(object):
         fcode = _pcap.bpf_program()
         self.__filter = value.encode("utf-8")
         if _pcap.compile(self.__pcap, ct.byref(fcode), self.__filter, optimize, 0) < 0:
-            raise OSError(str(_pcap.geterr(self.__pcap).decode("utf-8")))
+            raise OSError(self.geterr())
         if _pcap.setfilter(self.__pcap, ct.byref(fcode)) < 0:
-            raise OSError(str(_pcap.geterr(self.__pcap).decode("utf-8")))
+            raise OSError(self.geterr())
         _pcap.freecode(ct.byref(fcode))
 
     def setdirection(self, direction):
@@ -212,10 +212,6 @@ class pcap(object):
 
         return _pcap.datalink(self.__pcap)
 
-    def __add_pkts(self, ts, pkt, pkts):
-
-        pkts.append((ts, pkt))
-
     def readpkts(self):
 
         """Return a list of (timestamp, packet) tuples received in one buffer."""
@@ -223,6 +219,10 @@ class pcap(object):
         pkts = []
         self.dispatch(-1, self.__add_pkts, pkts)
         return pkts
+
+    def __add_pkts(self, ts, pkt, pkts):
+
+        pkts.append((ts, pkt))
 
     def dispatch(self, cnt, callback, *args):
 
@@ -298,15 +298,8 @@ class pcap(object):
         """Send a raw network packet on the interface."""
 
         if _pcap.sendpacket(self.__pcap, buf, len(buf)) == -1:
-            raise OSError(str(_pcap.geterr(self.__pcap).decode("utf-8")))
+            raise OSError(self.geterr())
         return len(buf)
-
-    def geterr(self):
-
-        """Return the last error message associated with this handle."""
-
-        errmsg = _pcap.geterr(self.__pcap)
-        return str(errmsg.decode("utf-8")) if errmsg is not None else None
 
     def stats(self):
 
@@ -315,8 +308,15 @@ class pcap(object):
 
         pstat = _pcap.stat()
         if _pcap.stats(self.__pcap, ct.byref(pstat)) < 0:
-            raise OSError(str(_pcap.geterr(self.__pcap).decode("utf-8")))
+            raise OSError(self.geterr())
         return (pstat.ps_recv, pstat.ps_drop, pstat.ps_ifdrop)
+
+    def geterr(self):
+
+        """Return the last error message associated with this handle."""
+
+        errmsg = _pcap.geterr(self.__pcap)
+        return str(errmsg.decode("utf-8")) if errmsg is not None else None
 
     def __iter__(self):
 
