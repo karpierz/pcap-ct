@@ -180,9 +180,9 @@ class pcap(object):
         fcode = _pcap.bpf_program()
         self.__filter = value.encode("utf-8")
         if _pcap.compile(self.__pcap, ct.byref(fcode), self.__filter, optimize, 0) < 0:
-            raise OSError(_pcap.geterr(self.__pcap))
+            raise OSError(str(_pcap.geterr(self.__pcap).decode("utf-8")))
         if _pcap.setfilter(self.__pcap, ct.byref(fcode)) < 0:
-            raise OSError(_pcap.geterr(self.__pcap))
+            raise OSError(str(_pcap.geterr(self.__pcap).decode("utf-8")))
         _pcap.freecode(ct.byref(fcode))
 
     def setdirection(self, direction):
@@ -298,14 +298,15 @@ class pcap(object):
         """Send a raw network packet on the interface."""
 
         if _pcap.sendpacket(self.__pcap, buf, len(buf)) == -1:
-            raise OSError(_pcap.geterr(self.__pcap))
+            raise OSError(str(_pcap.geterr(self.__pcap).decode("utf-8")))
         return len(buf)
 
     def geterr(self):
 
         """Return the last error message associated with this handle."""
 
-        return _pcap.geterr(self.__pcap)
+        errmsg = _pcap.geterr(self.__pcap)
+        return str(errmsg.decode("utf-8")) if errmsg is not None else None
 
     def stats(self):
 
@@ -314,7 +315,7 @@ class pcap(object):
 
         pstat = _pcap.stat()
         if _pcap.stats(self.__pcap, ct.byref(pstat)) < 0:
-            raise OSError(_pcap.geterr(self.__pcap))
+            raise OSError(str(_pcap.geterr(self.__pcap).decode("utf-8")))
         return (pstat.ps_recv, pstat.ps_drop, pstat.ps_ifdrop)
 
     def __iter__(self):
