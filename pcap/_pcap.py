@@ -120,7 +120,7 @@ class pcap(object):
         try:
             self.__dloff = dltoff[_pcap.datalink(self.__pcap)]
         except KeyError:
-            self.__dloff = 0 #??? # AK: added
+            self.__dloff = 0  # AK: added
         if immediate and _pcap_ex.immediate(self.__pcap) < 0:
             raise OSError("couldn't enable immediate mode")
 
@@ -238,14 +238,17 @@ class pcap(object):
         *args    -- optional arguments passed to callback on execution
         """
 
+        global __pcap_handler_ctx, __pcap_handler
+
         ctx = __pcap_handler_ctx()
-        ctx.callback = callback #??? ct.py_object(callback)
-        ctx.args     = args     #??? ct.py_object(args)
+        ctx.callback = callback
+        ctx.args     = args
+        ctx.exc      = None
         n = _pcap.dispatch(self.__pcap, cnt, __pcap_handler,
                            ct.cast(ct.pointer(ctx), ct.POINTER(ct.c_ubyte)))
                           #ct.cast(<void*>ctx,      ct.POINTER(ct.c_ubyte)))
-        exc = ctx.exc.value
-        if exc:
+        exc = ctx.exc
+        if exc is not None:
             if sys.version_info[0] < 3:
                 raise exc[0](exc[1])
             else:
@@ -281,13 +284,13 @@ class pcap(object):
             elif n == 1:
                 header = hdr.contents
                 callback(header.ts.tv_sec + (header.ts.tv_usec / 1000000.0),
-                         ct.cast(pkt, ct.c_char_p)[:header.caplen], # bytes
+                         ct.cast(pkt, ct.POINTER(ct.c_char * header.caplen)).contents.raw,
                          *args)
             elif n == -1:
                 raise KeyboardInterrupt()
             elif n == -2:
                 break
-            #else: # AK: added
+            #else:  # AK: added
             #   ??? what about other/unknown codes?
             if i == cnt: break
             i += 1
@@ -334,12 +337,12 @@ class pcap(object):
             elif n == 1:
                 header = hdr.contents
                 return (header.ts.tv_sec + (header.ts.tv_usec / 1000000.0),
-                        ct.cast(pkt, ct.c_char_p)[:header.caplen]) # bytes
+                        ct.cast(pkt, ct.POINTER(ct.c_char * header.caplen)).contents.raw)
             elif n == -1:
                 raise KeyboardInterrupt()
             elif n == -2:
                 raise StopIteration
-            #else: # AK: added
+            #else:  # AK: added
             #   ??? what about other/unknown codes?
 
     if sys.version_info[0] < 3:
@@ -374,12 +377,14 @@ def findalldevs():
     retval = []
     if not devs:
         return retval
-    dev = devs
-    while dev:
-        dev = dev.contents
-        retval.append(str(dev.name.decode("utf-8")))
-        dev = dev.next
-    _pcap.freealldevs(devs)
+    try:  # AK added
+        dev = devs
+        while dev:
+            dev = dev.contents
+            retval.append(str(dev.name.decode("utf-8")))
+            dev = dev.next
+    finally:
+        _pcap.freealldevs(devs)
     return retval
 
 
@@ -402,16 +407,18 @@ def lookupnet(dev):
 @_pcap.pcap_handler
 def __pcap_handler(arg, hdr, pkt): # with gil:
 
+    global __pcap_handler_ctx
+
     ctx = ct.cast(arg, ct.POINTER(__pcap_handler_ctx)).contents
     try:
         header   = hdr.contents
-        callback = ctx.callback.value
-        args     = ctx.args.value
+        callback = ctx.callback
+        args     = ctx.args
         callback(header.ts.tv_sec + (header.ts.tv_usec / 1000000.0),
-                 ct.cast(pkt, ct.c_char_p)[:header.caplen], # bytes
+                 ct.cast(pkt, ct.POINTER(ct.c_char * header.caplen)).contents.raw,
                  *args)
     except:
-        ctx.exc = sys.exc_info() #??? ct.py_object(sys.exc_info())
+        ctx.exc = sys.exc_info()
 
 
 class __pcap_handler_ctx(ct.Structure):

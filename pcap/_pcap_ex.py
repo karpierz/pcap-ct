@@ -16,9 +16,8 @@ from __future__ import absolute_import
 
 import ctypes as ct
 
-from libpcap._platform import is_windows
+from libpcap._platform import is_windows, defined
 from libpcap._platform import CFUNC
-from libpcap           import defined
 import libpcap as _pcap
 
 
@@ -64,7 +63,7 @@ def name(name):
         if __findalldevs(ct.byref(pifs), ebuf) == -1:
             return name
 
-        try: # AK: added
+        try:  # AK: added
             i   = 0
             pif = pifs
             while pif:
@@ -96,7 +95,7 @@ def lookupdev(ebuf):
         if __findalldevs(ct.byref(pifs), ebuf) == -1:
             return None
 
-        try: # AK added
+        try:  # AK added
             # Get first not 0.0.0.0 or 127.0.0.1 device
 
             name = None
@@ -144,7 +143,8 @@ def setup(pcap):
 
     # XXX - hrr, this sux
     if is_windows:
-        SetConsoleCtrlHandler(__ctrl_handler, TRUE)
+        #ctrl_handler = ct.WINFUNCTYPE(ct.wintypes.BOOL, ct.wintypes.DWORD)(__ctrl_handler)
+        ct.windll.kernel32.SetConsoleCtrlHandler(__ctrl_handler, 1) #, TRUE)
     else:
         #if 0
         """
@@ -212,8 +212,7 @@ def next(pcap, hdr, pkt):
 
     else:
 
-        global __hdr
-        global __pkt
+        global __hdr, __pkt
 
         tv   = timeval([ 1, 0 ]) # ???
         rfds = fd_set() # ???
@@ -258,7 +257,7 @@ def compile_nopcap(snaplen, dlt, fp, str, optimize, netmask):
         _pcap.compile_nopcap
     except AttributeError:
 
-        ebuf = None #???# char[_pcap.PCAP_ERRBUF_SIZE]
+        ebuf = ct.create_string_buffer(_pcap.PCAP_ERRBUF_SIZE)
         ret  = -1
 
         path = "/tmp/.pypcapXXXXXX.pcap" # char[]
@@ -269,7 +268,7 @@ def compile_nopcap(snaplen, dlt, fp, str, optimize, netmask):
         if f != None: #!!! NULL
 
             hdr = _pcap.file_header()
-            hdr.magic         = 0xa1b2c3d4;
+            hdr.magic         = 0xA1B2C3D4
             hdr.version_major = _pcap.PCAP_VERSION_MAJOR
             hdr.version_minor = _pcap.PCAP_VERSION_MINOR
             hdr.thiszone      = 0
@@ -291,8 +290,8 @@ def compile_nopcap(snaplen, dlt, fp, str, optimize, netmask):
     else:
         if defined("__NetBSD__"):
             # We love consistent interfaces
-            errbuf = ct.create_string_buffer(_pcap.PCAP_ERRBUF_SIZE)
-            return _pcap.compile_nopcap(snaplen, dlt, fp, str, optimize, netmask, errbuf)
+            ebuf = ct.create_string_buffer(_pcap.PCAP_ERRBUF_SIZE)
+            return _pcap.compile_nopcap(snaplen, dlt, fp, str, optimize, netmask, ebuf)
         else:
             return _pcap.compile_nopcap(snaplen, dlt, fp, str, optimize, netmask)
 
@@ -301,8 +300,6 @@ __got_signal = False
 
 if is_windows:
 
-    from ctypes import wintypes
-
     @CFUNC(ct.c_int, ct.POINTER(ct.POINTER(_pcap.pcap_if_t)), ct.c_char_p)
     def __findalldevs(dst, ebuf):
 
@@ -310,24 +307,25 @@ if is_windows:
 
         pifs = ct.POINTER(_pcap.pcap_if_t)()
         ret = _pcap.findalldevs(ct.byref(pifs), ebuf)
-        if ret != -1:
-            # XXX - flip script like a dyslexic actor
-            prev, pif = None, pifs
-            while pif:
-                next = pif.contents.next
-                pif.contents.next = prev
-                prev, pif = pif, next
-            dst.contents = prev
+        if ret == -1:
+            return ret
+
+        # XXX - flip script like a dyslexic actor
+        prev, pif = None, pifs
+        while pif:
+            next = pif.contents.next
+            pif.contents.next = prev
+            prev, pif = pif, next
+        dst.contents = prev
 
         return ret
 
-    @CFUNC(wintypes.BOOL, wintypes.DWORD)
-   #def CALLBACK __ctrl_handler(sig):
+    @ct.WINFUNCTYPE(ct.wintypes.BOOL, ct.wintypes.DWORD)
     def __ctrl_handler(sig):
 
         global __got_signal
         __got_signal = True
-        return TRUE
+        return 1 # TRUE
 
 else:
 
