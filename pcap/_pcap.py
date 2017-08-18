@@ -104,7 +104,7 @@ class pcap(object):
         if not name:
             cname = _pcap_ex.lookupdev(self.__ebuf)
             if cname is None:
-                raise OSError(self.__ebuf.value)
+                raise OSError(str(self.__ebuf.value.decode("utf-8")))
         else:
             cname = name.encode("utf-8")
 
@@ -113,7 +113,7 @@ class pcap(object):
             self.__pcap = _pcap.open_live(_pcap_ex.name(cname), snaplen, promisc,
                                           timeout_ms, self.__ebuf)
         if not self.__pcap:
-            raise OSError(self.__ebuf.value)
+            raise OSError(str(self.__ebuf.value.decode("utf-8")))
 
         self.__name   = cname
         self.__filter = b""
@@ -203,7 +203,7 @@ class pcap(object):
 
         ret = _pcap_ex.getnonblock(self.__pcap, self.__ebuf)
         if ret < 0:
-            raise OSError(self.__ebuf.value)
+            raise OSError(str(self.__ebuf.value.decode("utf-8")))
         return ret != 0
 
     def datalink(self):
@@ -359,7 +359,7 @@ def lookupdev():
     ebuf = ct.create_string_buffer(_pcap.PCAP_ERRBUF_SIZE)
     p = _pcap_ex.lookupdev(ebuf)
     if p is None:
-        raise OSError(ebuf.value)
+        raise OSError(str(ebuf.value.decode("utf-8")))
     return str(p.decode("utf-8"))
 
 
@@ -371,7 +371,7 @@ def findalldevs():
     ebuf = ct.create_string_buffer(_pcap.PCAP_ERRBUF_SIZE)
     status = _pcap.findalldevs(ct.byref(devs), ebuf)
     if status:
-        raise OSError(ebuf.value)
+        raise OSError(str(ebuf.value.decode("utf-8")))
     retval = []
     if not devs:
         return retval
@@ -398,7 +398,7 @@ def lookupnet(dev):
     ebuf  = ct.create_string_buffer(_pcap.PCAP_ERRBUF_SIZE)
     status = _pcap.lookupnet(dev, ct.byref(netp), ct.byref(maskp), ebuf)
     if status:
-        raise OSError(ebuf.value)
+        raise OSError(str(ebuf.value.decode("utf-8")))
     return struct.pack("I", netp.value), struct.pack("I", maskp.value)
 
 

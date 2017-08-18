@@ -53,7 +53,7 @@ def name(name):
         global __pcap_name
 
         # XXX - according to the WinPcap FAQ, no loopback support???
-        if not name.value.startswith("eth"):
+        if not name.value.startswith(b"eth"):
             return name
         try:
             idx = int(name.value[3:])
