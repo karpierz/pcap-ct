@@ -12,6 +12,9 @@ from libpcap._platform import is_windows, is_osx, defined
 from libpcap._platform import CFUNC
 import libpcap as _pcap
 
+if not is_windows:
+    libc = ct.cdll.LoadLibrary("/lib64/libc.so.6")
+
 
 @CFUNC(ct.c_int, ct.POINTER(_pcap.pcap_t))
 def immediate(pcap):
@@ -38,6 +41,8 @@ __pcap_name = ct.create_string_buffer(_pcap.PCAP_ERRBUF_SIZE)
 @CFUNC(ct.c_char_p, ct.c_char_p)
 def name(name):
 
+    name = ct.c_char_p(name)
+
     if is_windows:
 
         # XXX - translate from libdnet logical interface name to
@@ -47,19 +52,19 @@ def name(name):
 
         # XXX - according to the WinPcap FAQ, no loopback support???
         if not name.value.startswith(b"eth"):
-            return name
+            return name.value
         try:
             idx = int(name.value[3:])
             # sscanf(name+3, "%u", &idx) != 1 # !!! czy sscanf dziala dla np: 123xyz ???
         except ValueError:
-            return name
+            return name.value
         if idx < 0:
-            return name
+            return name.value
 
         pifs = ct.POINTER(_pcap.pcap_if_t)()
         ebuf = ct.create_string_buffer(_pcap.PCAP_ERRBUF_SIZE)
         if __findalldevs(ct.byref(pifs), ebuf) == -1:
-            return name
+            return name.value
 
         try:  # AK: added
             i   = 0
@@ -76,10 +81,10 @@ def name(name):
         finally:
             _pcap.freealldevs(pifs)
 
-        return name
+        return name.value
 
     else:
-        return name
+        return name.value
 
 
 @CFUNC(ct.c_char_p, ct.c_char_p)
@@ -129,7 +134,7 @@ def fileno(pcap):
     else:
         f = _pcap.file(pcap)  # FILE*
         if f:
-            return fileno(f)  # !!! ???.fileno
+            return libc.fileno(f)
         else:
             return _pcap.fileno(pcap)
 
@@ -148,7 +153,7 @@ def setup(pcap):
         fcntl(fd, F_SETFL, n);
         """
         #endif
-        signal(SIGINT, __signal_handler) # !!! ???.signal
+        libc.signal(SIGINT, __signal_handler)
 
 
 @CFUNC(ct.c_int, ct.POINTER(_pcap.pcap_t), ct.c_int)
@@ -221,7 +226,7 @@ def next(pcap, hdr, pkt):
             if __pkt:
                 break
 
-            if _pcap.file(pcap) != None: #!!! NULL
+            if _pcap.file(pcap):
                 return -2
 
             try:
@@ -244,7 +249,7 @@ def next(pcap, hdr, pkt):
        ct.c_char_p,
        ct.c_int,
        ct.c_uint)
-def compile_nopcap(snaplen, dlt, fp, str, optimize, netmask):
+def compile_nopcap(snaplen, dlt, fp, buffer, optimize, netmask):
 
     try:
         _pcap.compile_nopcap
@@ -273,7 +278,7 @@ def compile_nopcap(snaplen, dlt, fp, str, optimize, netmask):
             pcap = _pcap.open_offline(f.name, ebuf)
             if pcap is not None:
                 try:
-                    ret = _pcap.compile(pcap, fp, str, optimize, netmask)
+                    ret = _pcap.compile(pcap, fp, buffer, optimize, netmask)
                 finally:
                     _pcap.close(pcap)
         finally:
@@ -284,9 +289,9 @@ def compile_nopcap(snaplen, dlt, fp, str, optimize, netmask):
         if defined("__NetBSD__"):
             # We love consistent interfaces
             ebuf = ct.create_string_buffer(_pcap.PCAP_ERRBUF_SIZE)
-            return _pcap.compile_nopcap(snaplen, dlt, fp, str, optimize, netmask, ebuf)
+            return _pcap.compile_nopcap(snaplen, dlt, fp, buffer, optimize, netmask, ebuf)
         else:
-            return _pcap.compile_nopcap(snaplen, dlt, fp, str, optimize, netmask)
+            return _pcap.compile_nopcap(snaplen, dlt, fp, buffer, optimize, netmask)
 
 
 __got_signal = False
