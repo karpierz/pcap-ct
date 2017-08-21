@@ -38,8 +38,6 @@ def immediate(pcap):
         return 0
 
 
-__pcap_name = ct.create_string_buffer(_pcap.PCAP_ERRBUF_SIZE)
-
 @CFUNC(ct.c_char_p, ct.c_char_p)
 def name(name):
 
@@ -49,8 +47,6 @@ def name(name):
 
         # XXX - translate from libdnet logical interface name to
         # WinPcap native interface name.
-
-        global __pcap_name
 
         # XXX - according to the WinPcap FAQ, no loopback support???
 
@@ -72,10 +68,8 @@ def name(name):
             while pif:
                 pif = pif.contents
                 if i == idx:
-                    strncpy(__pcap_name, pif.name, ct.sizeof(__pcap_name) - 1) # !!!
-                    __pcap_name[ct.sizeof(__pcap_name) - 1] = '\0'             # !!!
-                    name = __pcap_name
-                    break
+                    name = pif.name
+                    return name.value
                 i  += 1
                 pif = pif.next
         finally:
