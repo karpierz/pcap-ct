@@ -288,14 +288,11 @@ class pcap(object):
 
         _pcap_ex.setup(self.__pcap)
 
-        hdr = ct.POINTER(_pcap.pkthdr)()
-        pkt = ct.POINTER(ct.c_ubyte)()
-
         i = 1
         while True:
             # with nogil:
-            n = _pcap_ex.next(self.__pcap, ct.byref(hdr), ct.byref(pkt))
-            if n == 0: # timeout
+            n, hdr, pkt = _pcap_ex.next(self.__pcap)
+            if n == 0:  # timeout
                 continue
             elif n == 1:
                 header = hdr.contents
@@ -325,13 +322,10 @@ class pcap(object):
 
     def __next__(self):
 
-        hdr = ct.POINTER(_pcap.pkthdr)()
-        pkt = ct.POINTER(ct.c_ubyte)()
-
         while True:
             # with nogil:
-            n = _pcap_ex.next(self.__pcap, ct.byref(hdr), ct.byref(pkt))
-            if n == 0: # timeout
+            n, hdr, pkt = _pcap_ex.next(self.__pcap)
+            if n == 0:  # timeout
                 continue
             elif n == 1:
                 header = hdr.contents
@@ -395,6 +389,7 @@ def lookupnet(dev):
     as network-byteorder integers.
     """
 
+    dev   = dev.encode("utf-8")  # AK: added
     netp  = ct.c_uint()
     maskp = ct.c_uint()
     ebuf  = ct.create_string_buffer(_pcap.PCAP_ERRBUF_SIZE)

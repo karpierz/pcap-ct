@@ -3,11 +3,13 @@
 from __future__ import absolute_import
 
 import os
+import re
 import tempfile
 import socket
 import select
 import ctypes as ct
 
+from annotate import annotate
 from libpcap._platform import is_windows, is_osx, defined
 from libpcap._platform import CFUNC
 import libpcap as _pcap
@@ -16,7 +18,7 @@ if not is_windows:
     libc = ct.cdll.LoadLibrary("/lib64/libc.so.6")
 
 
-@CFUNC(ct.c_int, ct.POINTER(_pcap.pcap_t))
+@annotate(int, pcap=ct.POINTER(_pcap.pcap_t))
 def immediate(pcap):
 
     if is_windows:
@@ -51,19 +53,17 @@ def name(name):
         global __pcap_name
 
         # XXX - according to the WinPcap FAQ, no loopback support???
-        if not name.value.startswith(b"eth"):
+
+        m = re.match(rb"eth([-+]?\d+)", name.value)
+        if not m:
             return name.value
-        try:
-            idx = int(name.value[3:])
-            # sscanf(name+3, "%u", &idx) != 1 # !!! czy sscanf dziala dla np: 123xyz ???
-        except ValueError:
-            return name.value
+        idx = int(m.group(1))
         if idx < 0:
             return name.value
 
-        pifs = ct.POINTER(_pcap.pcap_if_t)()
         ebuf = ct.create_string_buffer(_pcap.PCAP_ERRBUF_SIZE)
-        if __findalldevs(ct.byref(pifs), ebuf) == -1:
+        ret, pifs = __findalldevs(ebuf)
+        if ret == -1:
             return name.value
 
         try:  # AK: added
@@ -94,14 +94,14 @@ def lookupdev(ebuf):
 
         # Get all available devices.
 
-        pifs = ct.POINTER(_pcap.pcap_if_t)()
-        if __findalldevs(ct.byref(pifs), ebuf) == -1:
+        ret, pifs = __findalldevs(ebuf)
+        if ret == -1:
             return None
 
         name = None
         try:  # AK added
             # Get first not 0.0.0.0 or 127.0.0.1 device
-            pif  = pifs
+            pif = pifs
             while pif:
                 pif = pif.contents
                 pa = pif.addresses
@@ -125,7 +125,7 @@ def lookupdev(ebuf):
         return _pcap.lookupdev(ebuf)
 
 
-@CFUNC(ct.c_int, ct.POINTER(_pcap.pcap_t))
+@annotate(int, pcap=ct.POINTER(_pcap.pcap_t))
 def fileno(pcap):
 
     if is_windows:
@@ -139,7 +139,7 @@ def fileno(pcap):
             return _pcap.fileno(pcap)
 
 
-@CFUNC(None, ct.POINTER(_pcap.pcap_t))
+@annotate(pcap=ct.POINTER(_pcap.pcap_t))
 def setup(pcap):
 
     # XXX - hrr, this sux
@@ -156,7 +156,7 @@ def setup(pcap):
         libc.signal(SIGINT, __signal_handler)
 
 
-@CFUNC(ct.c_int, ct.POINTER(_pcap.pcap_t), ct.c_int)
+@annotate(int, pcap=ct.POINTER(_pcap.pcap_t), direction=int)
 def setdirection(pcap, direction):
 
     try:
@@ -190,13 +190,9 @@ def setnonblock(pcap, nonblock, ebuf):
 
 
 __hdr = _pcap.pkthdr()
-__pkt = ct.POINTER(ct.c_ubyte)()
 
-@CFUNC(ct.c_int,
-       ct.POINTER(_pcap.pcap_t),
-       ct.POINTER(ct.POINTER(_pcap.pkthdr)),
-       ct.POINTER(ct.POINTER(ct.c_ubyte)))
-def next(pcap, hdr, pkt):
+@annotate(int, pcap=ct.POINTER(_pcap.pcap_t))
+def next(pcap):
 
     # return codes: 1 = pkt, 0 = timeout, -1 = error, -2 = EOF
 
@@ -204,42 +200,46 @@ def next(pcap, hdr, pkt):
 
     if is_windows:
 
+        hdr = ct.POINTER(_pcap.pkthdr)()
+        pkt = ct.POINTER(ct.c_ubyte)()
+
         if __got_signal:
             __got_signal = False
-            return -1
+            return -1, hdr, pkt
 
-        return _pcap.next_ex(pcap, hdr, pkt)
+        ret = _pcap.next_ex(pcap, ct.byref(hdr), ct.byref(pkt))
+        return ret, hdr, pkt
 
     else:
 
-        global __hdr, __pkt
+        global __hdr
 
         fd = _pcap.fileno(pcap)
 
         while True:
 
+            hdr = ct.POINTER(_pcap.pkthdr)()
+            pkt = ct.POINTER(ct.c_ubyte)()
+
             if __got_signal:
                 __got_signal = False
-                return -1
+                return -1, hdr, pkt
 
-            __pkt = ct.cast(_pcap.next(pcap, ct.byref(__hdr)), ct.POINTER(ct.c_ubyte))
-            if __pkt:
+            pkt = ct.cast(_pcap.next(pcap, ct.byref(__hdr)), ct.POINTER(ct.c_ubyte))
+            if pkt:
                 break
 
             if _pcap.file(pcap):
-                return -2
+                return -2, hdr, pkt
 
             try:
                 rfds, wfds, efds = select.select([fd], [], [], 1.0)
             except:
-                return -1
+                return -1, hdr, pkt
             if not rfds and not wfds and not efds:
-                return 0  # timeout
+                return 0, hdr, pkt  # timeout
 
-        hdr.contents = ct.pointer(__hdr)
-        pkt.contents = __pkt
-
-        return 1
+        return 1, ct.pointer(__hdr), pkt
 
 
 @CFUNC(ct.c_int,
@@ -272,7 +272,8 @@ def compile_nopcap(snaplen, dlt, fp, buffer, optimize, netmask):
                 hdr.snaplen       = snaplen
                 hdr.sigfigs       = 0
                 hdr.linktype      = dlt
-                f.fwrite(ct.byref(hdr), ct.sizeof(hdr), 1) # !!!
+                f.write(ct.cast(ct.pointer(hdr),
+                                ct.POINTER(ct.c_char * ct.sizeof(hdr))).contents.raw)
 
             ebuf = ct.create_string_buffer(_pcap.PCAP_ERRBUF_SIZE)
             pcap = _pcap.open_offline(f.name, ebuf)
@@ -300,15 +301,15 @@ if is_windows:
 
     import ctypes.wintypes
 
-    @CFUNC(ct.c_int, ct.POINTER(ct.POINTER(_pcap.pcap_if_t)), ct.c_char_p)
-    def __findalldevs(dst, ebuf):
+    #@CFUNC(ct.c_int, ct.c_char_p)
+    def __findalldevs(ebuf):
 
         # XXX - set device list in libdnet order.
 
         pifs = ct.POINTER(_pcap.pcap_if_t)()
         ret = _pcap.findalldevs(ct.byref(pifs), ebuf)
         if ret == -1:
-            return ret
+            return ret, pifs
 
         # XXX - flip script like a dyslexic actor
         prev, pif = None, pifs
@@ -316,9 +317,9 @@ if is_windows:
             next = pif.contents.next
             pif.contents.next = prev
             prev, pif = pif, next
-        dst.contents = prev
+        dest = prev
 
-        return ret
+        return ret, dest
 
     @ct.WINFUNCTYPE(ct.wintypes.BOOL, ct.wintypes.DWORD)
     def __ctrl_handler(sig):
