@@ -348,9 +348,10 @@ class pcap(object):
         next = __next__
 
 
-def ex_name(foo): # char *
+def ex_name(foo):
 
-    return _pcap_ex.name(foo)
+    cname = foo.encode("utf-8")  # AK: added
+    return _pcap_ex.name(cname)
 
 
 def lookupdev():
