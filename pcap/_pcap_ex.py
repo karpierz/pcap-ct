@@ -12,6 +12,7 @@ import ctypes as ct
 from annotate import annotate
 from libpcap._platform import is_windows, is_osx, defined
 from libpcap._platform import CFUNC
+from libpcap._platform import sockaddr_in
 import libpcap as _pcap
 
 if not is_windows:
@@ -38,10 +39,8 @@ def immediate(pcap):
         return 0
 
 
-@CFUNC(ct.c_char_p, ct.c_char_p)
+@annotate(bytes, bytes)
 def name(name):
-
-    name = ct.c_char_p(name)
 
     if is_windows:
 
@@ -50,35 +49,35 @@ def name(name):
 
         # XXX - according to the WinPcap FAQ, no loopback support???
 
-        m = re.match(rb"eth([-+]?\d+)", name.value)
+        m = re.match(rb"eth([-+]?\d+)", name)
         if not m:
-            return name.value
+            return name
         idx = int(m.group(1))
         if idx < 0:
-            return name.value
+            return name
 
         ebuf = ct.create_string_buffer(_pcap.PCAP_ERRBUF_SIZE)
         ret, pifs = __findalldevs(ebuf)
         if ret == -1:
-            return name.value
+            return name
 
         try:  # AK: added
             i   = 0
             pif = pifs
             while pif:
                 pif = pif.contents
+                #print("@@@", idx, i, pif.name)
                 if i == idx:
-                    name = pif.name
-                    return name.value
-                i  += 1
+                    return pif.name
+                i += 1
                 pif = pif.next
         finally:
             _pcap.freealldevs(pifs)
 
-        return name.value
+        return name
 
     else:
-        return name.value
+        return name
 
 
 @CFUNC(ct.c_char_p, ct.c_char_p)
@@ -98,11 +97,14 @@ def lookupdev(ebuf):
             pif = pifs
             while pif:
                 pif = pif.contents
+                #print("@@@", pif.name)
                 pa = pif.addresses
                 while pa:
                     pa = pa.contents
-                    addr_struct = pa.addr # (struct sockaddr_in *) pa.addr # !!!
-                    addr = addr_struct.sin_addr.S_un.S_addr  # u_long      # !!!
+                    addr_struct = ct.cast(pa.addr, ct.POINTER(sockaddr_in)).contents
+                    addr = addr_struct.sin_addr.s_addr
+                   #addr = addr_struct.sin_addr.S_un.S_addr  # u_long  # !!!
+                    #print("@=@", addr)
                     if (addr_struct.sin_family == socket.AF_INET and
                         addr != 0 and        # 0.0.0.0
                         addr != 0x100007F):  # 127.0.0.1
@@ -161,7 +163,7 @@ def setdirection(pcap, direction):
         return _pcap.setdirection(pcap, direction)
 
 
-@CFUNC(ct.c_int, ct.POINTER(_pcap.pcap_t), ct.c_char_p)
+@annotate(int, pcap=ct.POINTER(_pcap.pcap_t), ebuf=ct.c_char_p)
 def getnonblock(pcap, ebuf):
 
     try:
@@ -172,7 +174,7 @@ def getnonblock(pcap, ebuf):
         return _pcap.getnonblock(pcap, ebuf)
 
 
-@CFUNC(None, ct.POINTER(_pcap.pcap_t), ct.c_int, ct.c_char_p)
+@annotate(pcap=ct.POINTER(_pcap.pcap_t), nonblock=int, ebuf=ct.c_char_p)
 def setnonblock(pcap, nonblock, ebuf):
 
     try:
