@@ -11,7 +11,6 @@ import ctypes as ct
 
 from annotate import annotate
 from libpcap._platform import is_windows, is_osx, defined
-from libpcap._platform import CFUNC
 from libpcap._platform import sockaddr_in
 import libpcap as _pcap
 
@@ -57,7 +56,7 @@ def name(name):
             return name
 
         ebuf = ct.create_string_buffer(_pcap.PCAP_ERRBUF_SIZE)
-        ret, pifs = __findalldevs(ebuf)
+        ret, pifs = _findalldevs(ebuf)
         if ret == -1:
             return name
 
@@ -66,7 +65,6 @@ def name(name):
             pif = pifs
             while pif:
                 pif = pif.contents
-                #print("@@@", idx, i, pif.name)
                 if i == idx:
                     return pif.name
                 i += 1
@@ -80,14 +78,14 @@ def name(name):
         return name
 
 
-@CFUNC(ct.c_char_p, ct.c_char_p)
+@annotate((bytes, None), ebuf=ct.c_char_p)
 def lookupdev(ebuf):
 
     if is_windows:
 
         # Get all available devices.
 
-        ret, pifs = __findalldevs(ebuf)
+        ret, pifs = _findalldevs(ebuf)
         if ret == -1:
             return None
 
@@ -97,20 +95,18 @@ def lookupdev(ebuf):
             pif = pifs
             while pif:
                 pif = pif.contents
-                #print("@@@", pif.name)
-                pa = pif.addresses
-                while pa:
-                    pa = pa.contents
-                    addr_struct = ct.cast(pa.addr, ct.POINTER(sockaddr_in)).contents
+                pad = pif.addresses
+                while pad:
+                    pad = pad.contents
+                    addr_struct = ct.cast(pad.addr, ct.POINTER(sockaddr_in)).contents
                     addr = addr_struct.sin_addr.s_addr
-                   #addr = addr_struct.sin_addr.S_un.S_addr  # u_long  # !!!
-                    #print("@=@", addr)
+                   #addr = addr_struct.sin_addr.S_un.S_addr  # u_long # !!!
                     if (addr_struct.sin_family == socket.AF_INET and
                         addr != 0 and        # 0.0.0.0
                         addr != 0x100007F):  # 127.0.0.1
                         name = pif.name
-                        break
-                    pa = pa.next
+                        break # !!! Ma znajdowac ostatnie (jak teraz/orginalnie) czy pierwsze ???
+                    pad = pad.next
                 pif = pif.next
         finally:
             _pcap.freealldevs(pifs)
@@ -238,14 +234,10 @@ def next(pcap):
         return 1, ct.pointer(__hdr), pkt
 
 
-@CFUNC(ct.c_int,
-       ct.c_int,
-       ct.c_int,
-       ct.POINTER(_pcap.bpf_program),
-       ct.c_char_p,
-       ct.c_int,
-       ct.c_uint)
-def compile_nopcap(snaplen, dlt, fp, buffer, optimize, netmask):
+@annotate(int, snaplen=int, linktype=int,
+          prog=ct.POINTER(_pcap.bpf_program),
+          buffer=ct.c_char_p, optimize=int, mask=int)
+def compile_nopcap(snaplen, linktype, prog, buffer, optimize, mask):
 
     try:
         _pcap.compile_nopcap
@@ -267,7 +259,7 @@ def compile_nopcap(snaplen, dlt, fp, buffer, optimize, netmask):
                 hdr.thiszone      = 0
                 hdr.snaplen       = snaplen
                 hdr.sigfigs       = 0
-                hdr.linktype      = dlt
+                hdr.linktype      = linktype
                 f.write(ct.cast(ct.pointer(hdr),
                                 ct.POINTER(ct.c_char * ct.sizeof(hdr))).contents.raw)
 
@@ -275,7 +267,7 @@ def compile_nopcap(snaplen, dlt, fp, buffer, optimize, netmask):
             pcap = _pcap.open_offline(f.name, ebuf)
             if pcap is not None:
                 try:
-                    ret = _pcap.compile(pcap, fp, buffer, optimize, netmask)
+                    ret = _pcap.compile(pcap, prog, buffer, optimize, mask)
                 finally:
                     _pcap.close(pcap)
         finally:
@@ -286,9 +278,9 @@ def compile_nopcap(snaplen, dlt, fp, buffer, optimize, netmask):
         if defined("__NetBSD__"):
             # We love consistent interfaces
             ebuf = ct.create_string_buffer(_pcap.PCAP_ERRBUF_SIZE)
-            return _pcap.compile_nopcap(snaplen, dlt, fp, buffer, optimize, netmask, ebuf)
+            return _pcap.compile_nopcap(snaplen, linktype, prog, buffer, optimize, mask, ebuf)
         else:
-            return _pcap.compile_nopcap(snaplen, dlt, fp, buffer, optimize, netmask)
+            return _pcap.compile_nopcap(snaplen, linktype, prog, buffer, optimize, mask)
 
 
 __got_signal = False
@@ -297,8 +289,8 @@ if is_windows:
 
     import ctypes.wintypes
 
-    #@CFUNC(ct.c_int, ct.c_char_p)
-    def __findalldevs(ebuf):
+    @annotate(tuple((int, ct.POINTER(_pcap.pcap_if_t))), ebuf=ct.c_char_p)
+    def _findalldevs(ebuf):
 
         # XXX - set device list in libdnet order.
 
@@ -310,20 +302,20 @@ if is_windows:
         # XXX - flip script like a dyslexic actor
         prev, pif = ct.POINTER(_pcap.pcap_if_t)(), pifs
         while pif:
+            # pcap_if._fields_ = [
+            #     ("next", ct.POINTER(pcap_if)),
+            # ]
             next = pif.contents.next
-            print("***", repr(prev), repr(next))
-            pif.contents.next = prev
-            print("***", repr(prev), repr(pif.contents.next))
+            #print("***", repr(prev), repr(next))
+           #pif.contents.next = prev #!!!
+            #print("***", repr(prev), repr(pif.contents.next))
             prev, pif = pif, next
             # next = pif->next
             # pif->next = prev
 
-         #pcap_if._fields_ = [
-         #    ("next",        ct.POINTER(pcap_if)),
-         #]
-
         dest = prev
-        # *dst = prev
+        # *dest = prev
+        dest = pifs # !!! awaryjnie !!!
 
         return ret, dest
 
@@ -336,7 +328,7 @@ if is_windows:
 
 else:
 
-    @CFUNC(None, ct.c_int)
+    @ct.CFUNCTYPE(None, ct.c_int)
     def __signal_handler(sig):
 
         global __got_signal

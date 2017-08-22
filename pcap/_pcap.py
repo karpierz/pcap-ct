@@ -56,7 +56,8 @@ class bpf(object):
 
     def __init__(self, filter, dlt=DLT_RAW): # char *filter
 
-        if _pcap_ex.compile_nopcap(65535, dlt, ct.byref(self.fcode), filter, 1, 0) < 0:
+        if _pcap_ex.compile_nopcap(65535, dlt, ct.byref(self.fcode),
+                                   ct.c_char_p(filter), 1, 0) < 0:
             raise IOError("bad filter")
 
     def __del__(self):

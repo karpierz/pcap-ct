@@ -48,8 +48,9 @@ Requirements
 
 This package requires:
 
-* libpcap
-* TBD...
+- libpcap
+- TBD...
+- ATTENTION: currentlly works and tested only for Windows
 
 Installation
 ============
