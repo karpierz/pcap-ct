@@ -308,12 +308,22 @@ if is_windows:
             return ret, pifs
 
         # XXX - flip script like a dyslexic actor
-        prev, pif = None, pifs
+        prev, pif = ct.POINTER(_pcap.pcap_if_t)(), pifs
         while pif:
             next = pif.contents.next
+            print("***", repr(prev), repr(next))
             pif.contents.next = prev
+            print("***", repr(prev), repr(pif.contents.next))
             prev, pif = pif, next
+            # next = pif->next
+            # pif->next = prev
+
+         #pcap_if._fields_ = [
+         #    ("next",        ct.POINTER(pcap_if)),
+         #]
+
         dest = prev
+        # *dst = prev
 
         return ret, dest
 
