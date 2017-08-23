@@ -50,7 +50,7 @@ This package requires:
 
 - libpcap
 - TBD...
-- ATTENTION: currentlly works and tested only for Windows
+- ATTENTION: currently works and tested only for Windows
 
 Installation
 ============
