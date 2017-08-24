@@ -56,21 +56,21 @@ def name(name):
             return name
 
         ebuf = ct.create_string_buffer(_pcap.PCAP_ERRBUF_SIZE)
-        ret, pifs = _findalldevs(ebuf)
+        ret, devs = _findalldevs(ebuf)
         if ret == -1:
             return name
 
         try:  # AK: added
             i   = 0
-            pif = pifs
-            while pif:
-                pif = pif.contents
+            dev = devs
+            while dev:
+                dev = dev[0]
                 if i == idx:
-                    return pif.name
+                    return dev.name
                 i += 1
-                pif = pif.next
+                dev = dev.next
         finally:
-            _pcap.freealldevs(pifs)
+            _pcap.freealldevs(devs)
 
         return name
 
@@ -85,31 +85,31 @@ def lookupdev(ebuf):
 
         # Get all available devices.
 
-        ret, pifs = _findalldevs(ebuf)
+        ret, devs = _findalldevs(ebuf)
         if ret == -1:
             return None
 
         name = None
         try:  # AK added
             # Get first not 0.0.0.0 or 127.0.0.1 device
-            pif = pifs
-            while pif:
-                pif = pif.contents
-                pad = pif.addresses
+            dev = devs
+            while dev:
+                dev = dev[0]
+                pad = dev.addresses
                 while pad:
-                    pad = pad.contents
-                    addr_struct = ct.cast(pad.addr, ct.POINTER(sockaddr_in)).contents
+                    pad = pad[0]
+                    addr_struct = ct.cast(pad.addr, ct.POINTER(sockaddr_in))[0]
                     addr = addr_struct.sin_addr.s_addr
                    #addr = addr_struct.sin_addr.S_un.S_addr  # u_long # !!!
                     if (addr_struct.sin_family == socket.AF_INET and
                         addr != 0 and        # 0.0.0.0
                         addr != 0x100007F):  # 127.0.0.1
-                        name = pif.name
+                        name = dev.name
                         break # !!! Ma znajdowac ostatnie (jak teraz/orginalnie) czy pierwsze ???
                     pad = pad.next
-                pif = pif.next
+                dev = dev.next
         finally:
-            _pcap.freealldevs(pifs)
+            _pcap.freealldevs(devs)
 
         return name
 
@@ -261,7 +261,7 @@ def compile_nopcap(snaplen, linktype, prog, buffer, optimize, mask):
                 hdr.sigfigs       = 0
                 hdr.linktype      = linktype
                 f.write(ct.cast(ct.pointer(hdr),
-                                ct.POINTER(ct.c_char * ct.sizeof(hdr))).contents.raw)
+                                ct.POINTER(ct.c_char * ct.sizeof(hdr)))[0].raw)
 
             ebuf = ct.create_string_buffer(_pcap.PCAP_ERRBUF_SIZE)
             pcap = _pcap.open_offline(f.name, ebuf)
@@ -294,30 +294,21 @@ if is_windows:
 
         # XXX - set device list in libdnet order.
 
-        pifs = ct.POINTER(_pcap.pcap_if_t)()
-        ret = _pcap.findalldevs(ct.byref(pifs), ebuf)
+        devs = ct.POINTER(_pcap.pcap_if_t)()
+        ret = _pcap.findalldevs(ct.byref(devs), ebuf)
         if ret == -1:
-            return ret, pifs
+            return ret, devs
 
         # XXX - flip script like a dyslexic actor
-        prev, pif = ct.POINTER(_pcap.pcap_if_t)(), pifs
-        while pif:
-            # pcap_if._fields_ = [
-            #     ("next", ct.POINTER(pcap_if)),
-            # ]
-            next = pif.contents.next
-            #print("***", repr(prev), repr(next))
-           #pif.contents.next = prev #!!!
-            #print("***", repr(prev), repr(pif.contents.next))
-            prev, pif = pif, next
-            # next = pif->next
-            # pif->next = prev
+        prev, dev = ct.POINTER(_pcap.pcap_if_t)(), devs
+        while dev:
+            devo = dev[0]
+            next = type(devo.next)()
+            ct.pointer(next)[0] = devo.next
+            devo.next = prev
+            prev, dev = dev, next
 
-        dest = prev
-        # *dest = prev
-        dest = pifs # !!! awaryjnie !!!
-
-        return ret, dest
+        return ret, prev
 
     @ct.WINFUNCTYPE(ct.wintypes.BOOL, ct.wintypes.DWORD)
     def __ctrl_handler(sig):

@@ -296,9 +296,9 @@ class pcap(object):
             if n == 0:  # timeout
                 continue
             elif n == 1:
-                header = hdr.contents
+                header = hdr[0]
                 callback(header.ts.tv_sec + (header.ts.tv_usec / 1000000.0),
-                         ct.cast(pkt, ct.POINTER(ct.c_char * header.caplen)).contents.raw,
+                         ct.cast(pkt, ct.POINTER(ct.c_char * header.caplen))[0].raw,
                          *args)
             elif n == -1:
                 raise KeyboardInterrupt()
@@ -329,9 +329,9 @@ class pcap(object):
             if n == 0:  # timeout
                 continue
             elif n == 1:
-                header = hdr.contents
+                header = hdr[0]
                 return (header.ts.tv_sec + (header.ts.tv_usec / 1000000.0),
-                        ct.cast(pkt, ct.POINTER(ct.c_char * header.caplen)).contents.raw)
+                        ct.cast(pkt, ct.POINTER(ct.c_char * header.caplen))[0].raw)
             elif n == -1:
                 raise KeyboardInterrupt()
             elif n == -2:
@@ -376,7 +376,7 @@ def findalldevs():
     try:  # AK added
         dev = devs
         while dev:
-            dev = dev.contents
+            dev = dev[0]
             retval.append(str(dev.name.decode("utf-8")))
             dev = dev.next
     finally:
@@ -404,13 +404,13 @@ def lookupnet(dev):
 @_pcap.pcap_handler
 def _pcap_handler(arg, hdr, pkt): # with gil:
 
-    ctx = ct.cast(arg, ct.POINTER(_pcap_handler_ctx)).contents
+    ctx = ct.cast(arg, ct.POINTER(_pcap_handler_ctx))[0]
     try:
-        header   = hdr.contents
+        header   = hdr[0]
         callback = ctx.callback
         args     = ctx.args
         callback(header.ts.tv_sec + (header.ts.tv_usec / 1000000.0),
-                 ct.cast(pkt, ct.POINTER(ct.c_char * header.caplen)).contents.raw,
+                 ct.cast(pkt, ct.POINTER(ct.c_char * header.caplen))[0].raw,
                  *args)
     except:
         ctx.exc = sys.exc_info()
