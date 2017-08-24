@@ -122,7 +122,7 @@ def fileno(pcap):
 
     if is_windows:
         # XXX - how to handle savefiles?
-        return _pcap.getevent(pcap) # (ct.c_int) _pcap.getevent(pcap)
+        return _pcap.getevent(pcap)
     else:
         f = _pcap.file(pcap)  # FILE*
         if f:
