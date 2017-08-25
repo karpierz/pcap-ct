@@ -48,7 +48,7 @@ def name(name):
 
         # XXX - according to the WinPcap FAQ, no loopback support???
 
-        m = re.match(rb"eth([-+]?\d+)", name)
+        m = re.match(br"eth([-+]?\d+)", name)
         if not m:
             return name
         idx = int(m.group(1))
