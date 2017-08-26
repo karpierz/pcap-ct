@@ -84,7 +84,7 @@ or on development mode:
 Development
 ===========
 
-Visit: https://github.com/karpierz/pcap-ct
+Visit `development page <https://github.com/karpierz/pcap-ct>`__
 
 License
 =======
