@@ -265,7 +265,7 @@ def compile_nopcap(snaplen, linktype, prog, buffer, optimize, mask):
 
             ebuf = ct.create_string_buffer(_pcap.PCAP_ERRBUF_SIZE)
             pcap = _pcap.open_offline(f.name, ebuf)
-            if pcap is not None:
+            if pcap:
                 try:
                     ret = _pcap.compile(pcap, prog, buffer, optimize, mask)
                 finally:

@@ -355,10 +355,10 @@ def lookupdev():
     """Return the name of a network device suitable for sniffing."""
 
     ebuf = ct.create_string_buffer(_pcap.PCAP_ERRBUF_SIZE)
-    p = _pcap_ex.lookupdev(ebuf)
-    if p is None:
+    name = _pcap_ex.lookupdev(ebuf)
+    if name is None:
         raise OSError(str(ebuf.value.decode("utf-8")))
-    return str(p.decode("utf-8"))
+    return str(name.decode("utf-8"))
 
 
 def findalldevs():
