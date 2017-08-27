@@ -11,7 +11,7 @@ Parts of the documentation
    :caption: Contents:
 
    CHANGES.rst
-   # contributing 'Help the Project'
+.. contributing 'Help the Project'
 
 Indices and tables
 ==================

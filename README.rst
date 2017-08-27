@@ -6,9 +6,16 @@ Python wrapper for the pcap library.
 Overview
 ========
 
-`Read the Docs <http://pcap-ct.rtfd.org>`__
-
-TBD...
+  | Python *pcap-ct* package is a simplified object-oriented Python wrapper
+    for *libpcap* C library - the current tcpdump.org version, and the WinPcap
+    port for Windows..
+  |
+  | *pcap-ct* is a pure Python package, based on the low-level
+    `libcap <https://pypi.python.org/pypi/libpcap>`__ package.
+  | It is fully compliant implementation of the original
+    `PyPCAP <https://github.com/pynetwork/pypcap>`__ 1.2.0 API (with some minor
+    improvements and bug fixes) by implementing whole its functionality in a
+    clean Python instead of Cython and C.
 
 About original PyPCAP:
 ----------------------
@@ -46,11 +53,9 @@ The sample installation using `Chocolatey <https://chocolatey.org/>`_::
 Requirements
 ============
 
-This package requires:
-
-- libpcap
-- TBD...
-- ATTENTION: currently works and tested only for Windows
+- | It is fully independent package.
+  | All necessary things are installed during the normal installation process.
+- ATTENTION: currently works and tested only for Windows.
 
 Installation
 ============
@@ -77,7 +82,7 @@ Clone the `sources <https://github.com/karpierz/pcap-ct>`__ and run::
 
     python -m pip install ./pcap-ct
 
-or on development mode:
+or on development mode::
 
     python -m pip install --editable ./pcap-ct
 
