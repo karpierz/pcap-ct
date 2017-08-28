@@ -105,7 +105,7 @@ class pcap(object):
         if not name:
             cname = _pcap_ex.lookupdev(self.__ebuf)
             if cname is None:
-                raise OSError(str(self.__ebuf.value.decode("utf-8")))
+                raise OSError(str(self.__ebuf.value.decode("utf-8", "ignore")))
         else:
             cname = name.encode("utf-8")
 
@@ -114,7 +114,7 @@ class pcap(object):
             self.__pcap = _pcap.open_live(_pcap_ex.name(cname), snaplen, promisc,
                                           timeout_ms, self.__ebuf)
         if not self.__pcap:
-            raise OSError(str(self.__ebuf.value.decode("utf-8")))
+            raise OSError(str(self.__ebuf.value.decode("utf-8", "ignore")))
 
         self.__name   = cname
         self.__filter = b""
@@ -204,7 +204,7 @@ class pcap(object):
 
         ret = _pcap_ex.getnonblock(self.__pcap, self.__ebuf)
         if ret < 0:
-            raise OSError(str(self.__ebuf.value.decode("utf-8")))
+            raise OSError(str(self.__ebuf.value.decode("utf-8", "ignore")))
         return ret != 0
 
     def datalink(self):
@@ -314,7 +314,7 @@ class pcap(object):
         """Return the last error message associated with this handle."""
 
         errmsg = _pcap.geterr(self.__pcap)
-        return str(errmsg.decode("utf-8")) if errmsg is not None else None
+        return str(errmsg.decode("utf-8", "ignore")) if errmsg is not None else None
 
     def __iter__(self):
 
@@ -357,7 +357,7 @@ def lookupdev():
     ebuf = ct.create_string_buffer(_pcap.PCAP_ERRBUF_SIZE)
     name = _pcap_ex.lookupdev(ebuf)
     if name is None:
-        raise OSError(str(ebuf.value.decode("utf-8")))
+        raise OSError(str(ebuf.value.decode("utf-8", "ignore")))
     return str(name.decode("utf-8"))
 
 
@@ -369,7 +369,7 @@ def findalldevs():
     ebuf = ct.create_string_buffer(_pcap.PCAP_ERRBUF_SIZE)
     status = _pcap.findalldevs(ct.byref(devs), ebuf)
     if status:
-        raise OSError(str(ebuf.value.decode("utf-8")))
+        raise OSError(str(ebuf.value.decode("utf-8", "ignore")))
     retval = []
     if not devs:
         return retval
@@ -397,7 +397,7 @@ def lookupnet(dev):
     ebuf  = ct.create_string_buffer(_pcap.PCAP_ERRBUF_SIZE)
     status = _pcap.lookupnet(dev, ct.byref(netp), ct.byref(maskp), ebuf)
     if status:
-        raise OSError(str(ebuf.value.decode("utf-8")))
+        raise OSError(str(ebuf.value.decode("utf-8", "ignore")))
     return struct.pack("I", netp.value), struct.pack("I", maskp.value)
 
 
