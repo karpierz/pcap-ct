@@ -1,6 +1,6 @@
-# coding: utf-8
+# Copyright (c) 2016-2017, Adam Karpierz
+# Licensed under the BSD license
+# https://opensource.org/licenses/BSD-3-Clause
 
 from .__about__ import * ; __url__ = __uri__ ; del __about__
 from ._pcap import *
-
-# eof
