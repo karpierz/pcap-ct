@@ -46,10 +46,6 @@ it's recommended to use `Npcap <https://nmap.org/npcap/>`_
 but with improved speed, portability, security, and efficiency).
 Please enable WinPcap API-compatible mode during the library installation.
 
-The sample installation using `Chocolatey <https://chocolatey.org/>`_::
-
-    choco install -y npcap --ia '/winpcap_mode=yes'
-
 Requirements
 ============
 
