@@ -30,7 +30,7 @@ Changelog
 ---------------------
   - Next alpha release.
 
-1.1.6a0 (2017-08-10)
+1.1.6a0 (2017-06-10)
 --------------------
   - First alpha release.
 
