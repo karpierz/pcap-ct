@@ -1,9 +1,14 @@
 Changelog
 =========
 
+1.2.0b2 (2017-10-10)
+--------------------
+  - Minor changes.
+
 1.2.0b1 (2017-10-05)
 --------------------
-  - Fifth beta release.
+  - Next beta release.
+  - Update for PyPCAP 1.2.0rc.
 
 1.1.6b4 (2017-10-04)
 --------------------

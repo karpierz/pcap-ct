@@ -1,21 +1,21 @@
 pcap-ct
 =======
 
-Python wrapper for the pcap library.
+Python wrapper for the *pcap* library.
 
 Overview
 ========
 
-  | Python *pcap-ct* package is a simplified object-oriented Python wrapper
-    for *libpcap* C library - the current tcpdump.org version, and the WinPcap
-    port for Windows..
-  |
-  | *pcap-ct* is a pure Python package, based on the low-level
-    `libcap <https://pypi.python.org/pypi/libpcap>`__ package.
-  | It is fully compliant implementation of the original
-    `PyPCAP <https://github.com/pynetwork/pypcap>`__ 1.2.0 API (with some minor
-    improvements and bug fixes) by implementing whole its functionality in a
-    clean Python instead of Cython and C.
+| Python *pcap-ct* package is a simplified object-oriented Python wrapper
+  for *libpcap* C library - the current tcpdump.org version, and the WinPcap
+  port for Windows..
+|
+| *pcap-ct* is a pure Python package, based on the low-level
+  `libcap <https://pypi.python.org/pypi/libpcap>`__ package.
+| It is fully compliant implementation of the original
+  `PyPCAP <https://github.com/pynetwork/pypcap>`__ 1.2.0 API (with some minor
+  improvements and bug fixes) by implementing whole its functionality in a
+  clean Python instead of Cython and C.
 
 About original PyPCAP:
 ----------------------
@@ -61,7 +61,7 @@ Prerequisites:
 + Python 2.7 or higher or 3.4 or higher
 
   * http://www.python.org/
-  * 2.7 and 3.4 are primary test environments.
+  * 2.7 and 3.4 with LIBPCAP 1.8.1 are primary test environments.
 
 + pip and setuptools
 
@@ -99,6 +99,7 @@ License
   | Copyright (c) 2016-2017, Adam Karpierz
   |
   | Licensed under the BSD license
+  | http://opensource.org/licenses/BSD-3-Clause
   | Please refer to the LICENSE file.
 
 Authors
