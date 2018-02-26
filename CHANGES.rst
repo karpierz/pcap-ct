@@ -1,6 +1,10 @@
 Changelog
 =========
 
+1.2.0b4 (2018-02-26)
+--------------------
+  - Improve and simplify setup and packaging.
+
 1.2.0b3 (2018-02-01)
 --------------------
   - Update for PyPCAP 1.2.0.
