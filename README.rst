@@ -61,7 +61,7 @@ Prerequisites:
 + Python 2.7 or higher or 3.4 or higher
 
   * http://www.python.org/
-  * 2.7 and 3.4 with LIBPCAP 1.8.1 are primary test environments.
+  * 2.7 and 3.6 with LIBPCAP 1.8.1 are primary test environments.
 
 + pip and setuptools
 
@@ -71,6 +71,11 @@ Prerequisites:
 To install run::
 
     python -m pip install --upgrade pcap-ct
+
+Development
+===========
+
+Visit `development page <https://github.com/karpierz/pcap-ct>`__
 
 Installation from sources:
 
@@ -82,14 +87,9 @@ or on development mode::
 
     python -m pip install --editable ./pcap-ct
 
-Development
-===========
-
-Visit `development page <https://github.com/karpierz/pcap-ct>`__
-
 Prerequisites:
 
-+ Development is based strictly on *tox*. To install it run::
++ Development is strictly based on *tox*. To install it run::
 
     python -m pip install tox
 
@@ -105,4 +105,4 @@ License
 Authors
 =======
 
-* Adam Karpierz <python@python.pl>
+* Adam Karpierz <adam@karpierz.net>

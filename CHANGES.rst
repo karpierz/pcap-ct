@@ -1,6 +1,11 @@
 Changelog
 =========
 
+1.2.0b5 (2018-11-08)
+--------------------
+  - Update required setuptools version.
+  - Minor setup and tests improvements.
+
 1.2.0b4 (2018-02-26)
 --------------------
   - Improve and simplify setup and packaging.
