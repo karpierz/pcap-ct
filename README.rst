@@ -6,21 +6,21 @@ Python wrapper for the *pcap* library.
 Overview
 ========
 
-| Python *pcap-ct* package is a simplified object-oriented Python wrapper
+| Python |package_bold| package is a simplified object-oriented Python wrapper
   for *libpcap* C library - the current tcpdump.org version, and the WinPcap
   port for Windows..
 |
-| *pcap-ct* is a pure Python package, based on the low-level
-  `libcap <https://pypi.python.org/pypi/libpcap>`__ package.
+| |package_bold| is a pure Python package, based on the low-level
+  `libcap <https://pypi.org/project/libpcap/>`__ package.
 | It is fully compliant implementation of the original
-  `PyPCAP <https://github.com/pynetwork/pypcap>`__ 1.2.0 API (with some minor
+  `PyPCAP <https://github.com/pynetwork/pypcap>`__ 1.2.3 API (with some minor
   improvements and bug fixes) by implementing whole its functionality in a
   clean Python instead of Cython and C.
 
 About original PyPCAP:
 ----------------------
 
-Borrowed from the `original website <http://pypcap.readthedocs.org>`__:
+Borrowed from the `original website <https://pypcap.readthedocs.io>`__:
 
 PyPCAP
 ------
@@ -49,7 +49,7 @@ Please enable WinPcap API-compatible mode during the library installation.
 Requirements
 ============
 
-- | It is fully independent package.
+- | It is a fully independent package.
   | All necessary things are installed during the normal installation process.
 - ATTENTION: currently works and tested only for Windows.
 
@@ -58,51 +58,68 @@ Installation
 
 Prerequisites:
 
-+ Python 2.7 or higher or 3.4 or higher
++ Python 3.5 or higher
 
-  * http://www.python.org/
-  * 2.7 and 3.6 with LIBPCAP 1.8.1 are primary test environments.
+  * https://www.python.org/
+  * 3.7 with C LIBPCAP 1.8.1 is a primary test environment.
 
 + pip and setuptools
 
-  * http://pypi.python.org/pypi/pip
-  * http://pypi.python.org/pypi/setuptools
+  * https://pypi.org/project/pip/
+  * https://pypi.org/project/setuptools/
 
-To install run::
+To install run:
 
-    python -m pip install --upgrade pcap-ct
+.. parsed-literal::
+
+    python -m pip install --upgrade |package|
 
 Development
 ===========
 
-Visit `development page <https://github.com/karpierz/pcap-ct>`__
+Visit `development page`_.
 
 Installation from sources:
 
-Clone the `sources <https://github.com/karpierz/pcap-ct>`__ and run::
+clone the sources:
 
-    python -m pip install ./pcap-ct
+.. parsed-literal::
 
-or on development mode::
+    git clone |respository| |package|
 
-    python -m pip install --editable ./pcap-ct
+and run:
+
+.. parsed-literal::
+
+    python -m pip install ./|package|
+
+or on development mode:
+
+.. parsed-literal::
+
+    python -m pip install --editable ./|package|
 
 Prerequisites:
 
 + Development is strictly based on *tox*. To install it run::
 
-    python -m pip install tox
+    python -m pip install --upgrade tox
 
 License
 =======
 
-  | Copyright (c) 2016-2018, Adam Karpierz
+  | Copyright (c) 2016-2019, Adam Karpierz
   |
   | Licensed under the BSD license
-  | http://opensource.org/licenses/BSD-3-Clause
-  | Please refer to the LICENSE file.
+  | https://opensource.org/licenses/BSD-3-Clause/
+  | Please refer to the accompanying LICENSE file.
 
 Authors
 =======
 
 * Adam Karpierz <adam@karpierz.net>
+
+.. |package| replace:: pcap-ct
+.. |package_bold| replace:: **pcap-ct**
+.. |respository| replace:: https://github.com/karpierz/pcap-ct.git
+.. _development page: https://github.com/karpierz/pcap-ct/

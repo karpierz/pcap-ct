@@ -1,14 +1,12 @@
-# Copyright (c) 2016-2018, Adam Karpierz
+# Copyright (c) 2016-2019, Adam Karpierz
 # Licensed under the BSD license
-# http://opensource.org/licenses/BSD-3-Clause
-
-from __future__ import absolute_import
+# https://opensource.org/licenses/BSD-3-Clause/
 
 from os import path
 from setuptools import setup
 
 top_dir = path.dirname(path.abspath(__file__))
-with open(path.join(top_dir, "pcap", "__about__.py")) as f:
+with open(path.join(top_dir, "src", "pcap", "__about__.py")) as f:
     class about: exec(f.read(), None)
 
 setup(

@@ -1,3 +1,4 @@
+# cython: language_level=3str
 #
 # pcap.pyx
 #
@@ -14,7 +15,7 @@ __author__ = 'Dug Song <dugsong@monkey.org>'
 __copyright__ = 'Copyright (c) 2004 Dug Song'
 __license__ = 'BSD license'
 __url__ = 'https://github.com/pynetwork/pypcap'
-__version__ = '1.2.0'
+__version__ = '1.2.2'
 
 import sys
 import struct
@@ -57,6 +58,13 @@ cdef extern from "pcap.h":
     pcap_t *pcap_open_live(char *device, int snaplen, int promisc,
                            int to_ms, char *errbuf)
     pcap_t *pcap_open_offline(char *fname, char *errbuf)
+    pcap_t *pcap_create(char *source, char *errbuf)
+    int     pcap_set_snaplen(pcap_t *p, int snaplen)
+    int     pcap_set_promisc(pcap_t *p, int promisc)
+    int     pcap_set_timeout(pcap_t *p, int to_ms)
+    int     pcap_set_immediate_mode(pcap_t *p, int immediate_mode)
+    int     pcap_set_rfmon(pcap_t *p, int rfmon)
+    int     pcap_activate(pcap_t *p)
     int     pcap_compile(pcap_t *p, bpf_program *fp, char *str, int optimize,
                          unsigned int netmask)
     int     pcap_setfilter(pcap_t *p, bpf_program *fp)
@@ -88,13 +96,21 @@ cdef extern from "pcap_ex.h":
     void    pcap_ex_setnonblock(pcap_t *p, int nonblock, char *ebuf)
     int     pcap_ex_getnonblock(pcap_t *p, char *ebuf)
     int    pcap_ex_setdirection(pcap_t *p, int direction)
-    int     pcap_ex_next(pcap_t *p, pcap_pkthdr **hdr, u_char **pkt) nogil
+    int     pcap_ex_next(pcap_t *p, pcap_pkthdr *hdr, u_char **pkt) nogil
     int     pcap_ex_compile_nopcap(int snaplen, int dlt,
                                    bpf_program *fp, char *str,
                                    int optimize, unsigned int netmask)
+    int     pcap_ex_get_tstamp_precision(pcap_t *p)
+    int     pcap_ex_set_tstamp_precision(pcap_t *p, int tstamp_precision)
+    pcap_t *pcap_ex_open_offline_with_tstamp_precision(char *fname,
+                                                       unsigned int precision,
+                                                       char *errbuf)
 
 cdef class pcap_handler_ctx:
     cdef:
+        double scale
+        long long scale_ns
+        bint timestamp_in_ns
         void *callback
         void *args
         object exc
@@ -108,11 +124,18 @@ cdef object get_buffer(const u_char *pkt, u_int len):
 cdef void __pcap_handler(u_char *arg, const pcap_pkthdr *hdr, const u_char *pkt) with gil:
     cdef pcap_handler_ctx ctx = <pcap_handler_ctx><void*>arg
     try:
-        (<object>ctx.callback)(
-            hdr.ts.tv_sec + (hdr.ts.tv_usec / 1000000.0),
-            get_buffer(pkt, hdr.caplen),
-            *(<object>ctx.args)
-        )
+        if ctx.timestamp_in_ns:
+            (<object>ctx.callback)(
+                (hdr.ts.tv_sec * 1000000000LL) + (hdr.ts.tv_usec * ctx.scale_ns),
+                get_buffer(pkt, hdr.caplen),
+                *(<object>ctx.args)
+            )
+        else:
+            (<object>ctx.callback)(
+                hdr.ts.tv_sec + (hdr.ts.tv_usec * ctx.scale),
+                get_buffer(pkt, hdr.caplen),
+                *(<object>ctx.args)
+            )
     except:
         ctx.exc = sys.exc_info()
 
@@ -143,6 +166,9 @@ PCAP_D_INOUT = 0
 PCAP_D_IN = 1
 PCAP_D_OUT = 2
 
+PCAP_TSTAMP_PRECISION_MICRO = 0
+PCAP_TSTAMP_PRECISION_NANO = 1
+
 dltoff = { DLT_NULL:4, DLT_EN10MB:14, DLT_IEEE802:22, DLT_ARCNET:6,
           DLT_SLIP:16, DLT_PPP:4, DLT_FDDI:21, DLT_PFLOG:48, DLT_PFSYNC:4,
           DLT_LOOP:4, DLT_RAW:0, DLT_LINUX_SLL:16 }
@@ -170,7 +196,7 @@ cdef class bpf:
 
 
 cdef class pcap:
-    """pcap(name=None, snaplen=65535, promisc=True, timeout_ms=None, immediate=False)  -> packet capture object
+    """pcap(name=None, snaplen=65535, promisc=True, timeout_ms=None, immediate=False, timestamp_in_ns=False)  -> packet capture object
 
     Open a handle to a packet capture descriptor.
 
@@ -183,15 +209,20 @@ cdef class pcap:
                   (in milliseconds) is reached and no packets were received
                   (Default: no timeout)
     immediate -- disable buffering, if possible
+    timestamp_in_ns -- report timestamps in integer nanoseconds
     """
     cdef pcap_t *__pcap
     cdef char *__name
     cdef char *__filter
     cdef char __ebuf[256]
     cdef int __dloff
+    cdef double __precision_scale
+    cdef long long __precision_scale_ns
+    cdef bint __timestamp_in_ns
 
     def __init__(self, name=None, snaplen=65535, promisc=True,
-                 timeout_ms=0, immediate=False):
+                 timeout_ms=0, immediate=False, rfmon=False,
+                 timestamp_in_ns=False):
         global dltoff
         cdef char *p
 
@@ -203,15 +234,46 @@ cdef class pcap:
             py_byte_name = name.encode('UTF-8')
             p = py_byte_name
 
-        self.__pcap = pcap_open_offline(p, self.__ebuf)
+        self.__pcap = pcap_ex_open_offline_with_tstamp_precision(
+            p, PCAP_TSTAMP_PRECISION_NANO, self.__ebuf)
         if not self.__pcap:
-            self.__pcap = pcap_open_live(pcap_ex_name(p), snaplen, promisc,
-                                         timeout_ms, self.__ebuf)
+            self.__pcap = pcap_create(pcap_ex_name(p), self.__ebuf)
+            passing = True
+            def check_return(ret, descrip):
+                if ret != 0:
+                    raise OSError, "%s failed to execute" % descrip
+            check_return(pcap_set_snaplen(self.__pcap, snaplen),
+                         "Set snaplength")
+            check_return(pcap_set_promisc(self.__pcap, promisc),
+                         "Set promiscuous mode")
+            check_return(pcap_set_timeout(self.__pcap, timeout_ms),
+                         "Set timeout")
+            check_return(pcap_set_immediate_mode(self.__pcap, immediate),
+                         "Set immediate mode")
+            check_return(pcap_set_rfmon(self.__pcap, rfmon),
+                         "Set monitor mode")
+            # Ask for nano-second precision, but don't fail if not available.
+            pcap_ex_set_tstamp_precision(self.__pcap, PCAP_TSTAMP_PRECISION_NANO)
+            if pcap_activate(self.__pcap) != 0:
+                raise OSError, ("Activateing packet capture failed. "
+                                "Error returned by packet capture library "
+                                "was %s" % pcap_geterr(self.__pcap))
+
         if not self.__pcap:
             raise OSError, self.__ebuf
 
         self.__name = strdup(p)
         self.__filter = strdup("")
+        self.__timestamp_in_ns = timestamp_in_ns
+        precision = pcap_ex_get_tstamp_precision(self.__pcap)
+        if precision == PCAP_TSTAMP_PRECISION_MICRO:
+            self.__precision_scale = 1e-6
+            self.__precision_scale_ns = 1000
+        elif precision == PCAP_TSTAMP_PRECISION_NANO:
+            self.__precision_scale = 1e-9
+            self.__precision_scale_ns = 1
+        else:
+            raise OSError, "couldn't determine timestamp precision"
         try:
             self.__dloff = dltoff[pcap_datalink(self.__pcap)]
         except KeyError:
@@ -244,9 +306,24 @@ cdef class pcap:
         def __get__(self):
             return pcap_ex_fileno(self.__pcap)
 
+    property precision:
+        """Precision of timestamps"""
+        def __get__(self):
+            return pcap_ex_get_tstamp_precision(self.__pcap)
+
+    property timestamp_in_ns:
+        """Whether timestamps are returned in nanosecond units"""
+        def __get__(self):
+            return self.__timestamp_in_ns
+
     def fileno(self):
         """Return file descriptor (or Win32 HANDLE) for capture handle."""
         return pcap_ex_fileno(self.__pcap)
+
+    def close(self):
+        """Explicitly close the underlying pcap handle"""
+        pcap_close(self.__pcap)
+        self.__pcap = NULL
 
     def setfilter(self, value, optimize=1):
         """Set BPF-format packet capture filter."""
@@ -304,6 +381,9 @@ cdef class pcap:
         cdef pcap_handler_ctx ctx = pcap_handler_ctx()
         cdef int n
 
+        ctx.scale = self.__precision_scale
+        ctx.scale_ns = self.__precision_scale_ns
+        ctx.timestamp_in_ns = self.__timestamp_in_ns
         ctx.callback = <void *>callback
         ctx.args = <void *>args
         n = pcap_dispatch(self.__pcap, cnt, __pcap_handler, <u_char *><void*>ctx)
@@ -324,20 +404,30 @@ cdef class pcap:
         callback -- function with (timestamp, pkt, *args) prototype
         *args    -- optional arguments passed to callback on execution
         """
-        cdef pcap_pkthdr *hdr
+        cdef pcap_pkthdr hdr
         cdef u_char *pkt
         cdef int n
         cdef int i = 1
+        cdef double scale = self.__precision_scale
+        cdef long long scale_ns = self.__precision_scale_ns
+        cdef bint timestamp_in_ns = self.__timestamp_in_ns
         pcap_ex_setup(self.__pcap)
         while 1:
             with nogil:
                 n = pcap_ex_next(self.__pcap, &hdr, &pkt)
             if n == 1:
-                callback(
-                    hdr.ts.tv_sec + (hdr.ts.tv_usec / 1000000.0),
-                    get_buffer(pkt, hdr.caplen),
-                    *args
-                )
+                if timestamp_in_ns:
+                    callback(
+                        (hdr.ts.tv_sec * 1000000000LL) + (hdr.ts.tv_usec * scale_ns),
+                        get_buffer(pkt, hdr.caplen),
+                        *args
+                    )
+                else:
+                    callback(
+                        hdr.ts.tv_sec + (hdr.ts.tv_usec * scale),
+                        get_buffer(pkt, hdr.caplen),
+                        *args
+                    )
             elif n == 0:
                 continue
             elif n == -1:
@@ -372,17 +462,24 @@ cdef class pcap:
         return self
 
     def __next__(self):
-        cdef pcap_pkthdr *hdr
+        cdef pcap_pkthdr hdr
         cdef u_char *pkt
         cdef int n
+        cdef double scale = self.__precision_scale
+        cdef long long scale_ns = self.__precision_scale_ns
+        cdef bint timestamp_in_ns = self.__timestamp_in_ns
+        cdef double timestamp
+        cdef long long timestamp_ns
         while 1:
             with nogil:
                 n = pcap_ex_next(self.__pcap, &hdr, &pkt)
             if n == 1:
-                return (
-                    hdr.ts.tv_sec + (hdr.ts.tv_usec / 1000000.0),
-                    get_buffer(pkt, hdr.caplen),
-                )
+                if timestamp_in_ns:
+                    timestamp_ns = (hdr.ts.tv_sec * 1000000000LL) + (hdr.ts.tv_usec * scale_ns)
+                    return (timestamp_ns, get_buffer(pkt, hdr.caplen))
+                else:
+                    timestamp = hdr.ts.tv_sec + (hdr.ts.tv_usec * scale)
+                    return (timestamp, get_buffer(pkt, hdr.caplen))
             elif n == 0:
                 continue
             elif n == -1:

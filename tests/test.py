@@ -7,6 +7,23 @@ from threading import Thread
 import pcap
 
 
+__packet_info = [
+    (1092256609.9265549, 62),
+    (1092256609.9265759, 54),
+    (1092256610.332396, 62),
+    (1092256610.3324161, 54),
+    (1092256610.8330729, 62),
+    (1092256610.8330951, 54)
+]
+__packet_info_ns = [
+    (1544364035361743687, 265),
+    (1544364035671452774, 2372),
+    (1544364035671501426, 954),
+    (1544364035672465467, 151),
+    (1544364035697301662, 342),
+    (1544364035697481078, 228)
+]
+
 def relative_file(filename):
     """Find a file that is relative to this python source file
 
@@ -20,20 +37,19 @@ def relative_file(filename):
 
 def test_pcap_iter():
     l = [(x[0], len(x[1])) for x in pcap.pcap(relative_file('test.pcap'))]
-    assert l == [
-        (1092256609.9265549, 62),
-        (1092256609.9265759, 54),
-        (1092256610.332396, 62),
-        (1092256610.3324161, 54),
-        (1092256610.8330729, 62),
-        (1092256610.8330951, 54)
-    ], 'pcap iter'
+    assert l == __packet_info, 'pcap iter'
+
+
+def test_pcap_iter_ns():
+    l = [(x[0], len(x[1]))
+         for x in pcap.pcap(relative_file('test_nano.pcap'), timestamp_in_ns=True)]
+    assert l == __packet_info_ns, 'pcap iter ns'
 
 
 def test_pcap_properties():
     p = pcap.pcap(relative_file('test.pcap'))
-    assert (p.name, p.snaplen, p.dloff, p.filter) == (
-        relative_file('test.pcap'), 2000, 14, ''), 'pcap properties'
+    assert (p.name, p.snaplen, p.dloff, p.filter, p.precision) == (
+        relative_file('test.pcap'), 2000, 14, '', pcap.PCAP_TSTAMP_PRECISION_NANO), 'pcap properties'
 
 
 def test_pcap_errors():
@@ -47,13 +63,25 @@ def test_pcap_errors():
 
 def test_pcap_dispatch():
     def __cnt_handler(ts, pkt, d):
-        d['cnt'] += 1
+        d.append((ts, len(pkt)))
     p = pcap.pcap(relative_file('test.pcap'))
-    d = {'cnt': 0}
+    d = []
     n = p.dispatch(-1, __cnt_handler, d)
     assert n == 0
-    assert d['cnt'] == 6
+    assert d == __packet_info
 
+
+def test_pcap_dispatch_ns():
+    def __cnt_handler(ts, pkt, d):
+        d.append((ts, len(pkt)))
+    p = pcap.pcap(relative_file('test_nano.pcap'), timestamp_in_ns=True)
+    d = []
+    n = p.dispatch(-1, __cnt_handler, d)
+    assert n == 0
+    assert d == __packet_info_ns
+
+
+def test_pcap_dispatch_exception():
     def __bad_handler(ts, pkt):
         raise NotImplementedError
     p = pcap.pcap(relative_file('test.pcap'))
@@ -115,6 +143,42 @@ def test_pcap_overwritten():
         assert len(set(p[:] for p in packets_b)) > 1
 
 
+class loop_ctx():
+    def __init__(self, orig_data):
+        self.cnt = 0
+        self.orig_data = orig_data
+        self.exception = None
+
+    def loop_cb(self, timestamp, data):
+        try:
+            assert(data == self.orig_data[self.cnt])
+            self.cnt += 1
+        except AssertionError as e:
+            self.exception = e
+
+def test_pcap_loop_overwritten():
+    pkts_a = [x[1] for x in pcap.pcap(relative_file('test.pcap'))]
+    pkts_b = [x[1] for x in pcap.pcap(relative_file('arp.pcap'))]
+
+    for rep in range(100):
+        loop_pkts_a = []
+        loop_pkts_b = []
+        pcap_a = pcap.pcap(relative_file('test.pcap'))
+        pcap_b = pcap.pcap(relative_file('arp.pcap'))
+        loop_ctx_a = loop_ctx(pkts_a)
+        loop_ctx_b = loop_ctx(pkts_b)
+        thread_a = Thread(target=pcap_a.loop, args=(0, loop_ctx_a.loop_cb))
+        thread_b = Thread(target=pcap_b.loop, args=(0, loop_ctx_b.loop_cb))
+        thread_a.start()
+        thread_b.start()
+        thread_a.join()
+        thread_b.join()
+        if loop_ctx_a.exception:
+            raise loop_ctx_a.exception
+        if loop_ctx_b.exception:
+            raise loop_ctx_b.exception
+
+
 def test_unicode():
     path = relative_file('test.pcap')
     p = pcap.pcap(path)
@@ -136,9 +200,13 @@ def test_unicode():
 
 if __name__ == '__main__':
     test_pcap_iter()
+    test_pcap_iter_ns()
     test_pcap_properties()
     test_pcap_errors()
     test_pcap_dispatch()
+    test_pcap_dispatch_ns()
+    test_pcap_dispatch_exception()
     test_pcap_readpkts()
     test_pcap_overwritten()
+    test_pcap_loop_overwritten()
     test_unicode()
