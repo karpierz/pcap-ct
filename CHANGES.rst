@@ -1,7 +1,7 @@
 Changelog
 =========
 
-1.2.3b1 (2019-11-12)
+1.2.3b1 (2019-11-14)
 --------------------
 - Update for PyPCAP 1.2.3.
 - Drop support for Python 2.
