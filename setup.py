@@ -1,12 +1,15 @@
-# Copyright (c) 2016-2019, Adam Karpierz
+# Copyright (c) 2016-2020, Adam Karpierz
 # Licensed under the BSD license
-# https://opensource.org/licenses/BSD-3-Clause/
+# https://opensource.org/licenses/BSD-3-Clause
 
 from os import path
+from io import open
+from glob import glob
 from setuptools import setup
 
 top_dir = path.dirname(path.abspath(__file__))
-with open(path.join(top_dir, "src", "pcap", "__about__.py")) as f:
+with open(glob(path.join(top_dir, "src/*/__about__.py"))[0],
+          encoding="utf-8") as f:
     class about: exec(f.read(), None)
 
 setup(

@@ -1,6 +1,6 @@
-# Copyright (c) 2016-2019, Adam Karpierz
+# Copyright (c) 2016-2020, Adam Karpierz
 # Licensed under the BSD license
-# https://opensource.org/licenses/BSD-3-Clause/
+# https://opensource.org/licenses/BSD-3-Clause
 
 from typing import Optional, Tuple
 import os
@@ -75,7 +75,6 @@ def name(name: bytes) -> bytes:
 
 def lookupdev(ebuf: ct.c_char_p) -> Optional[bytes]:
     if is_windows:
-
         # Get all available devices.
         ret, devs = _findalldevs(ebuf)
         if ret == -1:
@@ -104,7 +103,6 @@ def lookupdev(ebuf: ct.c_char_p) -> Optional[bytes]:
             _pcap.freealldevs(devs)
 
         return name
-
     else:
         return _pcap.lookupdev(ebuf)
 
@@ -152,21 +150,17 @@ def next_ex(pcap: ct.POINTER(_pcap.pcap_t), struct pcap_pkthdr** hdr, u_char** p
 def next_ex(pcap: ct.POINTER(_pcap.pcap_t),
             hdr: ct.POINTER(ct.POINTER(_pcap.pkthdr)),
             pkt: ct.POINTER(ct.POINTER(ct.c_ubyte))) -> int:
-
     # return codes: 1 = pkt, 0 = timeout, -1 = error, -2 = EOF
 
     global __got_signal
 
     if is_windows:
-
         if __got_signal:
             __got_signal = False
             return -1  # error
 
         return _pcap.next_ex(pcap, hdr, pkt)
-
     else:
-
         fd = _pcap.fileno(pcap)
 
         while True:

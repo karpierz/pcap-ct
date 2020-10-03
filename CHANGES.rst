@@ -1,12 +1,18 @@
 Changelog
 =========
 
+1.2.3b2 (2020-10-03)
+--------------------
+- Add support for Python 3.9.
+- Drop support for Python 3.5.
+- General update and cleanup.
+
 1.2.3b1 (2019-11-14)
 --------------------
 - Update for PyPCAP 1.2.3.
+- Add support for Python 3.8.
 - Drop support for Python 2.
 - Drop support for Python 3.4.
-- Add support for Python 3.8.
 - Setup improvements and cleanup.
 
 1.2.0b6 (2019-02-05)

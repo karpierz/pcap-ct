@@ -1,6 +1,6 @@
-# Copyright (c) 2016-2019, Adam Karpierz
+# Copyright (c) 2016-2020, Adam Karpierz
 # Licensed under the BSD license
-# https://opensource.org/licenses/BSD-3-Clause/
+# https://opensource.org/licenses/BSD-3-Clause
 
 """\
 packet capture library
@@ -53,7 +53,6 @@ dltoff = {
 
 
 class bpf:
-
     """bpf(filter, dlt=DLT_RAW) -> BPF filter object"""
 
     fcode = _pcap.bpf_program()
@@ -79,7 +78,6 @@ class bpf:
 
 
 class pcap:
-
     """pcap(name=None, snaplen=65535, promisc=True, timeout_ms=None, immediate=False, timestamp_in_ns=False)  -> packet capture object
 
     Open a handle to a packet capture descriptor.
@@ -99,7 +97,6 @@ class pcap:
     def __init__(self, name=None, snaplen=65535, promisc=True,
                  timeout_ms=0, immediate=False, rfmon=False,
                  timestamp_in_ns=False):
-
         global dltoff
 
         self.__ebuf = ct.create_string_buffer(_pcap.PCAP_ERRBUF_SIZE)
@@ -406,7 +403,7 @@ class pcap:
             #   ??? what about other/unknown codes?
 
 
-def ex_name(foo) -> str:
+def ex_name(foo: str) -> str:
     cname = foo.encode("utf-8")   # <AK>: added
     cname = _pcap_ex.name(cname)
     return cname.decode("utf-8")  # <AK>: added
