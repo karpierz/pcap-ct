@@ -10,7 +10,7 @@ __title__        = "pcap-ct"
 __summary__      = "Python wrapper for the pcap library."
 __uri__          = "https://pypi.org/project/pcap-ct/"
 __version_info__ = type("version_info", (), dict(major=1, minor=2, micro=3,
-                        releaselevel="beta", serial=2))
+                        releaselevel="beta", serial=3))
 __version__      = "{0.major}.{0.minor}.{0.micro}{1}{2}".format(__version_info__,
                    dict(alpha="a", beta="b", candidate="rc", final="",
                         post=".post", dev=".dev")[__version_info__.releaselevel],
