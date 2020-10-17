@@ -16,12 +16,8 @@ Changelog
 - Add support for Python 3.8.
 - Drop support for Python 2.
 - Drop support for Python 3.4.
-- Setup improvements and cleanup.
-
-1.2.0b6 (2019-02-05)
---------------------
 - Update required setuptools version.
-- Minor setup improvements.
+- Setup improvements and cleanup.
 
 1.2.0b5 (2018-11-08)
 --------------------
