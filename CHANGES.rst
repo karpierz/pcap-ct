@@ -1,16 +1,14 @@
 Changelog
 =========
 
-1.2.3b3 (2020-10-16)
---------------------
-- | Fixed a critical setup of 'libpcap' package
-  | (thank you very much msrst@Github!).
-
-1.2.3b2 (2020-10-03)
+1.2.3b4 (2020-10-17)
 --------------------
 - Add support for Python 3.9.
 - Drop support for Python 3.5.
+- | Fixed a critical setup of 'libpcap' package
+  | (thank you very much msrst@Github!).
 - General update and cleanup.
+- Fixed docs setup.
 
 1.2.3b1 (2019-11-14)
 --------------------
