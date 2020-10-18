@@ -1,7 +1,7 @@
 Changelog
 =========
 
-1.2.3b4 (2020-10-17)
+1.2.3b5 (2020-10-18)
 --------------------
 - Add support for Python 3.9.
 - Drop support for Python 3.5.
