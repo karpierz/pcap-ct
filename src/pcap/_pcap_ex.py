@@ -129,7 +129,8 @@ def setup(pcap: ct.POINTER(_pcap.pcap_t)):
             fd = _pcap.fileno(pcap)
             n = fcntl.fcntl(fd, F_GETFL, 0) | os.O_NONBLOCK
             fcntl.fcntl(fd, F_SETFL, n)
-        libc.signal(SIGINT, __signal_handler)
+        import signal
+        libc.signal(int(signal.SIGINT), __signal_handler)
 
 
 """/*
