@@ -15,7 +15,7 @@ from libpcap._platform import sockaddr_in
 import libpcap as _pcap
 
 if not is_windows:
-    libc = ct.cdll.LoadLibrary("/lib64/libc.so.6")
+    libc = ct.cdll.LoadLibrary("libc.so.6")
 
 
 def immediate(pcap: ct.POINTER(_pcap.pcap_t)) -> int:
