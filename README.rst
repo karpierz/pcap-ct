@@ -17,6 +17,10 @@ Overview
   improvements and bug fixes) by implementing whole its functionality in a
   clean Python instead of Cython and C.
 
+`PyPI record`_.
+
+`Documentation`_.
+
 About original PyPCAP:
 ----------------------
 
@@ -46,13 +50,6 @@ it's recommended to use `Npcap <https://nmap.org/npcap/>`_
 but with improved speed, portability, security, and efficiency).
 Please enable WinPcap API-compatible mode during the library installation.
 
-Requirements
-============
-
-- | It is a fully independent package.
-  | All necessary things are installed during the normal installation process.
-- ATTENTION: currently works and tested only for Windows.
-
 Installation
 ============
 
@@ -62,6 +59,7 @@ Prerequisites:
 
   * https://www.python.org/
   * 3.7 with C LIBPCAP 1.8.1 is a primary test environment.
+  * ATTENTION: currently tested only for Windows.
 
 + pip and setuptools
 
@@ -108,7 +106,7 @@ or on development mode:
 License
 =======
 
-  | Copyright (c) 2016-2020, Adam Karpierz
+  | Copyright (c) 2016-2021, Adam Karpierz
   | Licensed under the BSD license
   | https://opensource.org/licenses/BSD-3-Clause
   | Please refer to the accompanying LICENSE file.
@@ -121,5 +119,6 @@ Authors
 .. |package| replace:: pcap-ct
 .. |package_bold| replace:: **pcap-ct**
 .. |respository| replace:: https://github.com/karpierz/pcap-ct.git
-.. _development page: https://github.com/karpierz/pcap-ct/
+.. _development page: https://github.com/karpierz/pcap-ct
 .. _PyPI record: https://pypi.org/project/pcap-ct/
+.. _Documentation: https://pcap-ct.readthedocs.io/
