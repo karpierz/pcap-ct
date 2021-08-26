@@ -2,5 +2,12 @@
 # Licensed under the BSD license
 # https://opensource.org/licenses/BSD-3-Clause
 
-__import__("pkg_about").about("pcap-ct")
-__copyright__ = f"Copyright (c) 2016-2021, {__author__}"  # noqa
+import unittest
+
+import pcap
+
+
+class MainTestCase(unittest.TestCase):
+
+    def setUp(self):
+        pass
