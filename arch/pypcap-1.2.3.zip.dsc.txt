@@ -1,5 +1,0 @@
-Url: https://github.com/pynetwork/pypcap/archive/v1.2.3.zip
-Completed: 2019-11-11 10:16:07
-File name: pypcap-1.2.3.zip
-File date: 2019-11-11 10:16:07
-File size: 156115
