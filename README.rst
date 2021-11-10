@@ -58,7 +58,7 @@ Prerequisites:
 + Python 3.6 or higher
 
   * https://www.python.org/
-  * 3.7 with C LIBPCAP 1.8.1 is a primary test environment.
+  * 3.7 with C libpcap 1.8.1 is a primary test environment.
   * ATTENTION: currently tested only for Windows.
 
 + pip and setuptools

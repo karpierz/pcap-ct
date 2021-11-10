@@ -8,7 +8,7 @@ import pcap
 
 
 def usage():
-    sys.stderr.write('Usage: %s [-i device] [-l] [-n] [pattern]' % sys.argv[0])
+    sys.stderr.write('Usage: {} [-i device] [-l] [-n] [pattern]'.format(sys.argv[0]))
     sys.stderr.write("""
 Options:
 
@@ -40,8 +40,8 @@ def loop(pc, decode_fn):
     pc.loop(0, cb)
 
 
-def main():
-    opts, args = getopt.getopt(sys.argv[1:], 'i:hln')
+def main(argv=sys.argv[1:]):
+    opts, args = getopt.getopt(argv, 'i:hln')
     name = None
     use_loop = False
     timestamp_in_ns = False
@@ -63,7 +63,7 @@ def main():
         pcap.DLT_EN10MB: dpkt.ethernet.Ethernet
     }[pc.datalink()]
 
-    print('listening on %s: %s' % (pc.name, pc.filter))
+    print('listening on {}: {}'.format(pc.name, pc.filter))
     try:
         if use_loop:
             loop(pc, decode)
@@ -71,8 +71,9 @@ def main():
             iter(pc, decode)
     except KeyboardInterrupt:
         nrecv, ndrop, nifdrop = pc.stats()
-        print('\n%d packets received by filter' % nrecv)
-        print('%d packets dropped by kernel' % ndrop)
+        print('\n{:d} packets received by filter'.format(nrecv))
+        print('{:d} packets dropped by kernel'.format(ndrop))
 
-if __name__ == '__main__':
+
+if __name__.rpartition(".")[-1] == "__main__":
     main()

@@ -1,6 +1,7 @@
+import sys
 import binascii
-import os
 import struct
+import pathlib
 from threading import Thread
 
 # Local imports
@@ -24,6 +25,7 @@ __packet_info_ns = [
     (1544364035697481078, 228)
 ]
 
+
 def relative_file(filename):
     """Find a file that is relative to this python source file
 
@@ -32,7 +34,7 @@ def relative_file(filename):
         Returns:
             the absolute path to the filename
     """
-    return os.path.join(os.path.dirname(os.path.realpath(__file__)), filename)
+    return str(pathlib.Path(__file__).resolve().parent/'data'/filename)
 
 
 def test_pcap_iter():
@@ -102,6 +104,7 @@ def test_pcap_readpkts():
 
 
 class PktsThread(Thread):
+
     def __init__(self, name):
         Thread.__init__(self)
         self.name = name
@@ -144,6 +147,7 @@ def test_pcap_overwritten():
 
 
 class loop_ctx():
+
     def __init__(self, orig_data):
         self.cnt = 0
         self.orig_data = orig_data
@@ -198,7 +202,7 @@ def test_unicode():
         pass
 
 
-if __name__ == '__main__':
+def main(argv=sys.argv[1:]):
     test_pcap_iter()
     test_pcap_iter_ns()
     test_pcap_properties()
@@ -210,3 +214,7 @@ if __name__ == '__main__':
     test_pcap_overwritten()
     test_pcap_loop_overwritten()
     test_unicode()
+
+
+if __name__.rpartition(".")[-1] == "__main__":
+    sys.exit(main())

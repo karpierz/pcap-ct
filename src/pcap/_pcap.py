@@ -71,7 +71,7 @@ class bpf:
             buf  = memoryview(buf).tobytes()
             size = len(buf)
         except:
-            raise TypeError()
+            raise TypeError() from None
         return _pcap.bpf_filter(self.fcode.bf_insns,
                                 ct.cast(ct.c_char_p(buf), ct.POINTER(ct.c_ubyte)),
                                 size, size) != 0

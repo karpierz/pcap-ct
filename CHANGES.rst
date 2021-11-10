@@ -1,6 +1,12 @@
 Changelog
 =========
 
+1.2.3b8 (2021-10-20)
+--------------------
+- Update for libpcap>=1.11.0b1
+- Copyright year update.
+- Setup update.
+
 1.2.3b7 (2021-08-26)
 --------------------
 - Fixes for Linux.

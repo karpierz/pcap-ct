@@ -10,7 +10,7 @@ import socket
 import select
 import ctypes as ct
 
-from libpcap._platform import is_windows, is_osx, defined
+from libpcap._platform import defined, is_windows, is_osx
 from libpcap._platform import sockaddr_in
 import libpcap as _pcap
 
