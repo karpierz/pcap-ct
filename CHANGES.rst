@@ -1,6 +1,12 @@
 Changelog
 =========
 
+1.2.3b12 (2022-01-19)
+---------------------
+- | Fixed a bug in pcap.sendpacket()
+  | (thank you very much EvanSonnemans@Github
+  | for report and bugfix!).
+
 1.2.3b11 (2022-01-10)
 ---------------------
 - Update for libpcap>=1.11.0b3

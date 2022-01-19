@@ -309,7 +309,9 @@ class pcap:
 
     def sendpacket(self, buf) -> int:
         """Send a raw network packet on the interface."""
-        if _pcap.sendpacket(self.__pcap, buf, len(buf)) == -1:
+        if _pcap.sendpacket(self.__pcap,
+                            ct.cast(ct.c_char_p(buf), ct.POINTER(ct.c_ubyte)),
+                            len(buf)) == -1:
             raise OSError(self.geterr())
         return len(buf)
 
