@@ -1,7 +1,7 @@
 Changelog
 =========
 
-1.2.3b13 (2022-08-30)
+1.2.3b14 (2022-08-30)
 ---------------------
 - Update for libpcap>=1.11.0b6
 - Add support for Python 3.10 and 3.11

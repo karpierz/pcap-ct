@@ -161,6 +161,9 @@ def next_ex(pcap: ct.POINTER(_pcap.pcap_t),
 
         return _pcap.next_ex(pcap, hdr, pkt)
     else:
+        hdr = ct.cast(hdr, ct.POINTER(ct.POINTER(_pcap.pkthdr)))
+        pkt = ct.cast(pkt, ct.POINTER(ct.POINTER(ct.c_ubyte)))
+
         fd = _pcap.fileno(pcap)
 
         while True:
