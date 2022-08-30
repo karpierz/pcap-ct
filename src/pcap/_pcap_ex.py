@@ -10,7 +10,7 @@ import socket
 import select
 import ctypes as ct
 
-from libpcap._platform import defined, is_windows, is_osx
+from libpcap._platform import defined, is_windows, is_macos
 from libpcap._platform import sockaddr_in
 import libpcap as _pcap
 
@@ -26,7 +26,7 @@ def immediate(pcap: ct.POINTER(_pcap.pcap_t)) -> int:
         import fcntl
         n = ct.c_int(1)
         return fcntl.ioctl(_pcap.fileno(pcap), BIOCIMMEDIATE, ct.byref(n))
-    elif is_osx:
+    elif is_macos:
         # XXX On OSX Yosemite (10.10.3) BIOCIMMEDIATE is not defined)
         # !!! _IOW ???
         import fcntl
