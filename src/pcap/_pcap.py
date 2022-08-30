@@ -57,20 +57,22 @@ class bpf:
 
     fcode = _pcap.bpf_program()
 
-    def __init__(self, filter, dlt=DLT_RAW): # char *filter
+    def __init__(self, filter, dlt=DLT_RAW):  # noqa: A002 # char *filter
+        """Initializer."""
         if _pcap_ex.compile_nopcap(65535, dlt, ct.byref(self.fcode),
                                    ct.c_char_p(filter), 1, 0) < 0:
             raise IOError("bad filter")
 
     def __del__(self):
+        """Destructor."""
         _pcap.freecode(ct.byref(self.fcode))
 
-    def filter(self, buf) -> bool:
+    def filter(self, buf) -> bool:  # noqa: A003
         """Return boolean match for buf against our filter."""
         try:
             buf  = memoryview(buf).tobytes()
             size = len(buf)
-        except:
+        except:  # noqa: E722
             raise TypeError() from None
         return _pcap.bpf_filter(self.fcode.bf_insns,
                                 ct.cast(ct.c_char_p(buf), ct.POINTER(ct.c_ubyte)),
@@ -78,7 +80,8 @@ class bpf:
 
 
 class pcap:
-    """pcap(name=None, snaplen=65535, promisc=True, timeout_ms=None, immediate=False, timestamp_in_ns=False)  -> packet capture object
+    """pcap(name=None, snaplen=65535, promisc=True, timeout_ms=None,
+            immediate=False, timestamp_in_ns=False) -> packet capture object
 
     Open a handle to a packet capture descriptor.
 
@@ -97,6 +100,8 @@ class pcap:
     def __init__(self, name=None, snaplen=65535, promisc=True,
                  timeout_ms=0, immediate=False, rfmon=False,
                  timestamp_in_ns=False):
+        """Open a handle to a packet capture descriptor."""
+
         global dltoff
 
         self.__ebuf = ct.create_string_buffer(_pcap.PCAP_ERRBUF_SIZE)
@@ -118,9 +123,11 @@ class pcap:
                                                                    self.__ebuf)
         if not self.__pcap:
             self.__pcap = _pcap.create(_pcap_ex.name(cname), self.__ebuf)
+
             def check_return(ret, descrip):
                 if ret != 0:
                     raise OSError("{} failed to execute".format(descrip))
+
             check_return(_pcap.set_snaplen(self.__pcap, snaplen), "Set snaplength")
             check_return(_pcap.set_promisc(self.__pcap, promisc), "Set promiscuous mode")
             check_return(_pcap.set_timeout(self.__pcap, timeout_ms), "Set timeout")
@@ -134,7 +141,7 @@ class pcap:
             try:
                 _pcap.set_rfmon
             except AttributeError as exc:
-               if rfmon: raise exc
+                if rfmon: raise exc
             else:
                 check_return(_pcap.set_rfmon(self.__pcap, rfmon), "Set monitor mode")
             # Ask for nano-second precision, but don't fail if not available.
@@ -177,9 +184,10 @@ class pcap:
             raise OSError("couldn't enable immediate mode")
 
     def __del__(self):
+        """Destructor."""
         try:
             if self.__pcap: _pcap.close(self.__pcap)
-        except:
+        except:  # noqa: E722
             pass
 
     @property
@@ -197,7 +205,7 @@ class pcap:
         """Datalink offset (length of layer-2 frame header)."""
         return self.__dloff
 
-    @property
+    @property  # noqa: A003
     def filter(self) -> str:
         """Current packet capture filter."""
         return self.__filter.decode("utf-8")
@@ -285,7 +293,6 @@ class pcap:
         return the number of packets processed, or 0 for a savefile.
 
         Arguments:
-
         cnt      -- number of packets to process;
                     or 0 to process all packets until an error occurs,
                     EOF is reached, or the read times out;
@@ -317,7 +324,8 @@ class pcap:
 
     def stats(self) -> Tuple:
         """Return a 3-tuple of the total number of packets received,
-        dropped, and dropped by the interface."""
+        dropped, and dropped by the interface.
+        """
         pstat = _pcap.stat()
         if _pcap.stats(self.__pcap, ct.byref(pstat)) < 0:
             raise OSError(self.geterr())
@@ -325,11 +333,11 @@ class pcap:
 
     def loop(self, cnt, callback, *args):
         """Processing packets with a user callback during a loop.
+
         The loop can be exited when cnt value is reached
         or with an exception, including KeyboardInterrupt.
 
         Arguments:
-
         cnt      -- number of packets to process;
                     0 or -1 to process all packets until an error occurs,
                     EOF is reached;
@@ -363,7 +371,7 @@ class pcap:
                 raise KeyboardInterrupt()
             elif n == -2:
                 break
-            #else:  # <AK>: added
+            # else:  # <AK>: added
             #   ??? what about other/unknown codes?
             if i == cnt: break
             i += 1
@@ -374,10 +382,12 @@ class pcap:
         return errmsg.decode("utf-8", "ignore") if errmsg is not None else None
 
     def __iter__(self):
+        """Iterate over pcap."""
         _pcap_ex.setup(self.__pcap)
         return self
 
     def __next__(self):
+        """Return the next item from the iterator"""
         scale    = self.__precision_scale
         scale_ns = self.__precision_scale_ns
         timestamp_in_ns = self.__timestamp_in_ns
@@ -401,7 +411,7 @@ class pcap:
                 raise KeyboardInterrupt()
             elif n == -2:
                 raise StopIteration
-            #else:  # <AK>: added
+            # else:  # <AK>: added
             #   ??? what about other/unknown codes?
 
 
@@ -442,8 +452,7 @@ def findalldevs() -> List[str]:
 
 
 def lookupnet(dev: str) -> Tuple:
-    """
-    Return the address and the netmask of a given device
+    """Return the address and the netmask of a given device
     as network-byteorder integers.
     """
     dev   = dev.encode("utf-8")  # <AK>: added
@@ -473,7 +482,7 @@ def _pcap_handler(arg, hdr, pkt):  # with gil:
             callback(hdr.ts.tv_sec + (hdr.ts.tv_usec * scale),
                      ct.cast(pkt, ct.POINTER(ct.c_char * hdr.caplen))[0].raw,
                      *args)
-    except:
+    except:  # noqa: E722
         ctx.exc = sys.exc_info()
 
 

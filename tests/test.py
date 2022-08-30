@@ -69,7 +69,7 @@ def test_pcap_dispatch():
     p = pcap.pcap(relative_file('test.pcap'))
     d = []
     n = p.dispatch(-1, __cnt_handler, d)
-    assert n == 0
+    assert n == 0 or n == len(__packet_info)
     assert d == __packet_info
 
 
@@ -79,13 +79,13 @@ def test_pcap_dispatch_ns():
     p = pcap.pcap(relative_file('test_nano.pcap'), timestamp_in_ns=True)
     d = []
     n = p.dispatch(-1, __cnt_handler, d)
-    assert n == 0
+    assert n == 0 or n == len(__packet_info_ns)
     assert d == __packet_info_ns
 
 
 def test_pcap_dispatch_exception():
     def __bad_handler(ts, pkt):
-        raise NotImplementedError
+        raise NotImplementedError("Not implemented!")
     p = pcap.pcap(relative_file('test.pcap'))
     try:
         p.dispatch(-1, __bad_handler)

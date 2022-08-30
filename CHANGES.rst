@@ -1,6 +1,13 @@
 Changelog
 =========
 
+1.2.3b13 (2022-08-30)
+---------------------
+- Update for libpcap>=1.11.0b6
+- Add support for Python 3.10 and 3.11
+- Add preliminary support for PyPy 3.7, 3.8 and 3.9
+- Setup update (currently based mainly on pyproject.toml).
+
 1.2.3b12 (2022-01-19)
 ---------------------
 - | Fixed a bug in pcap.sendpacket()

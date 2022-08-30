@@ -5,12 +5,13 @@
 from typing import Optional, Tuple
 import os
 import re
+import struct
 import tempfile
 import socket
 import select
 import ctypes as ct
 
-from libpcap._platform import defined, is_windows, is_osx
+from libpcap._platform import defined, is_windows, is_macos
 from libpcap._platform import sockaddr_in
 import libpcap as _pcap
 
@@ -21,18 +22,16 @@ if not is_windows:
 def immediate(pcap: ct.POINTER(_pcap.pcap_t)) -> int:
     if is_windows:
         return _pcap.setmintocopy(pcap, 1)
-    elif defined("BIOCIMMEDIATE"):
-        # !!! BIOCIMMEDIATE ???
-        import fcntl
-        n = ct.c_int(1)
-        return fcntl.ioctl(_pcap.fileno(pcap), BIOCIMMEDIATE, ct.byref(n))
-    elif is_osx:
-        # XXX On OSX Yosemite (10.10.3) BIOCIMMEDIATE is not defined)
-        # !!! _IOW ???
-        import fcntl
-        n = ct.c_int(1)
-        return fcntl.ioctl(_pcap.fileno(pcap), _IOW('B', 112, ct.c_uint), ct.byref(n))
     else:
+        # From BSD net/bpf.h
+        # BIOCIMMEDIATE = _IOW('B', 112, ct.c_uint)
+        BIOCIMMEDIATE = ct.c_int32(0x80044270).value
+        try:
+            import fcntl
+            return fcntl.ioctl(_pcap.fileno(pcap), BIOCIMMEDIATE, struct.pack("I", 1))
+        except:  # noqa: E722
+            if is_macos: raise
+            pass
         return 0
 
 
@@ -91,12 +90,12 @@ def lookupdev(ebuf: ct.c_char_p) -> Optional[bytes]:
                     pad = pad[0]
                     addr_struct = ct.cast(pad.addr, ct.POINTER(sockaddr_in))[0]
                     addr = addr_struct.sin_addr.s_addr
-                   #addr = addr_struct.sin_addr.S_un.S_addr  # u_long # !!!
-                    if (addr_struct.sin_family == socket.AF_INET and
-                        addr != 0 and        # 0.0.0.0
-                        addr != 0x100007F):  # 127.0.0.1
+                    # addr = addr_struct.sin_addr.S_un.S_addr  # u_long # !!!
+                    if (addr_struct.sin_family == socket.AF_INET
+                        and addr != 0            # 0.0.0.0, 127.0.0.1
+                        and addr != 0x100007F):  # noqa: E129
                         name = dev.name
-                        break # !!! Ma znajdowac ostatnie (jak teraz/orginalnie) czy pierwsze ???
+                        break  # !!! Ma znajdowac ostatnie (jak teraz/orginalnie) czy pierwsze ???
                     pad = pad.next
                 dev = dev.next
         finally:
@@ -122,13 +121,13 @@ def fileno(pcap: ct.POINTER(_pcap.pcap_t)) -> int:
 def setup(pcap: ct.POINTER(_pcap.pcap_t)):
     # XXX - hrr, this sux
     if is_windows:
-        ct.windll.kernel32.SetConsoleCtrlHandler(__ctrl_handler, 1) #, TRUE)
+        ct.windll.kernel32.SetConsoleCtrlHandler(__ctrl_handler, 1)
     else:
         if 0:
             import fcntl
             fd = _pcap.fileno(pcap)
-            n = fcntl.fcntl(fd, F_GETFL, 0) | os.O_NONBLOCK
-            fcntl.fcntl(fd, F_SETFL, n)
+            n = fcntl.fcntl(fd, fcntl.F_GETFL, 0) | os.O_NONBLOCK
+            fcntl.fcntl(fd, fcntl.F_SETFL, n)
         import signal
         libc.signal(int(signal.SIGINT), __signal_handler)
 
@@ -178,7 +177,7 @@ def next_ex(pcap: ct.POINTER(_pcap.pcap_t),
 
             try:
                 rfds, wfds, efds = select.select([fd], [], [], 1.0)
-            except:
+            except:  # noqa: E722
                 return -1  # error
             if not rfds and not wfds and not efds:
                 return 0  # timeout
@@ -194,7 +193,7 @@ def compile_nopcap(snaplen: int, linktype: int, prog: ct.POINTER(_pcap.bpf_progr
         try:
             f = tempfile.NamedTemporaryFile("wb", prefix=".pypcap", suffix=".pcap",
                                             delete=False)
-        except:
+        except:  # noqa: E722
             return -1
 
         try:
@@ -245,15 +244,15 @@ if is_windows:
             return ret, devs
 
         # XXX - flip script like a dyslexic actor
-        prev, dev = ct.POINTER(_pcap.pcap_if_t)(), devs
+        prv, dev = ct.POINTER(_pcap.pcap_if_t)(), devs
         while dev:
             devo = dev[0]
-            next = type(devo.next)()
-            ct.pointer(next)[0] = devo.next
-            devo.next = prev
-            prev, dev = dev, next
+            nxt = type(devo.next)()
+            ct.pointer(nxt)[0] = devo.next
+            devo.next = prv
+            prv, dev = dev, nxt
 
-        return ret, prev
+        return ret, prv
 
     @ct.WINFUNCTYPE(ct.wintypes.BOOL, ct.wintypes.DWORD)
     def __ctrl_handler(sig):
