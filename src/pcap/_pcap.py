@@ -82,8 +82,9 @@ class bpf:
 
 
 class pcap:
-    """pcap(name=None, snaplen=65535, promisc=True, timeout_ms=None,
-            immediate=False, timestamp_in_ns=False) -> packet capture object
+    """pcap(name=None, snaplen=65535, promisc=True, timeout_ms=0,
+            immediate=False, timestamp_in_ns=False, buffer_size=0,
+            datalink=None) -> packet capture object
 
     Open a handle to a packet capture descriptor.
 
@@ -97,6 +98,8 @@ class pcap:
                   (Default: no timeout)
     immediate -- disable buffering, if possible
     timestamp_in_ns -- report timestamps in integer nanoseconds
+    buffer_size -- set the buffer size (in bytes) for capture handle
+                   (Default: 0 => use the platform's default)
     datalink -- manually set datalink type (eg for capture "any" interface,
                 set to SLL2, will return interface where packet is captured)
 
@@ -104,7 +107,7 @@ class pcap:
 
     def __init__(self, name=None, snaplen=65535, promisc=True,
                  timeout_ms=0, immediate=False, rfmon=False,
-                 timestamp_in_ns=False, datalink=None):
+                 timestamp_in_ns=False, buffer_size=0, datalink=None):
         """Open a handle to a packet capture descriptor."""
 
         global dltoff
@@ -149,6 +152,7 @@ class pcap:
                 if rfmon: raise exc
             else:
                 check_return(_pcap.set_rfmon(self.__pcap, rfmon), "Set monitor mode")
+            check_return(_pcap.set_buffer_size(self.__pcap, buffer_size), "Set buffer size")
             # Ask for nano-second precision, but don't fail if not available.
             try:
                 _pcap.set_tstamp_precision
@@ -156,6 +160,7 @@ class pcap:
                 pass
             else:
                 _pcap.set_tstamp_precision(self.__pcap, PCAP_TSTAMP_PRECISION_NANO)
+
             if _pcap.activate(self.__pcap) != 0:
                 raise OSError("Activateing packet capture failed. "
                               "Error returned by packet capture library "

@@ -1,10 +1,13 @@
 Changelog
 =========
 
-1.2.4b1 (2022-09-09)
+1.3.0b1 (2022-09-10)
 --------------------
+- | Support for libpcap.set_buffer_size() via 'buffer_size'
+  | (optional) pcap constructor's parameter.
 - | Added 'datalink' optional parameter to pcap constructor
   | (thank you very much easy-easy@Github for the patch!).
+- Tox configuration has been moved to pyproject.toml
 
 1.2.3b14 (2022-08-30)
 ---------------------

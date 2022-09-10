@@ -32,7 +32,7 @@ PyPCAP
 This is a simplified object-oriented Python wrapper for libpcap -
 the current tcpdump.org version, and the WinPcap port for Windows.
 
-Example use::
+Example use #1::
 
     >>> import pcap
     >>> sniffer = pcap.pcap(name=None, promisc=True, immediate=True, timeout_ms=50)
@@ -40,6 +40,13 @@ Example use::
     >>> for ts, pkt in sniffer:
     ...     print('%d\tSRC %-16s\tDST %-16s' % (ts, addr(pkt, sniffer.dloff + 12), addr(pkt, sniffer.dloff + 16)))
     ...
+
+Example use #2::
+
+    Listing Interfaces
+
+    >>> import pcap
+    >>> print ("Interfaces:\n" + '\n'.join(pcap.findalldevs()))
 
 Windows notes
 -------------
