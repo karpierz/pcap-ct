@@ -38,18 +38,18 @@ import libpcap as _pcap
 from . import _pcap_ex
 
 dltoff = {
-    DLT_NULL:       4,
-    DLT_EN10MB:    14,
-    DLT_IEEE802:   22,
-    DLT_ARCNET:     6,
-    DLT_SLIP:      16,
-    DLT_PPP:        4,
-    DLT_FDDI:      21,
-    DLT_PFLOG:     48,
-    DLT_PFSYNC:     4,
-    DLT_LOOP:       4,
-    DLT_RAW:        0,
-    DLT_LINUX_SLL: 16,
+    DLT_NULL:        4,
+    DLT_EN10MB:     14,
+    DLT_IEEE802:    22,
+    DLT_ARCNET:      6,
+    DLT_SLIP:       16,
+    DLT_PPP:         4,
+    DLT_FDDI:       21,
+    DLT_PFLOG:      48,
+    DLT_PFSYNC:      4,
+    DLT_LOOP:        4,
+    DLT_RAW:         0,
+    DLT_LINUX_SLL:  16,
     DLT_LINUX_SLL2: 20,
 }
 
@@ -97,7 +97,8 @@ class pcap:
                   (Default: no timeout)
     immediate -- disable buffering, if possible
     timestamp_in_ns -- report timestamps in integer nanoseconds
-    datalink -- manually set datalink type (eg for capture "any" interface, set to SLL2, will return interface where packet is captured)
+    datalink -- manually set datalink type (eg for capture "any" interface,
+                set to SLL2, will return interface where packet is captured)
 
     """
 

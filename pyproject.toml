@@ -8,7 +8,7 @@ requires = ['setuptools>=63.2.0', 'wheel>=0.37.1', 'packaging>=21.3.0', 'tox>=3.
 
 [project]
 name        = 'pcap-ct'
-version     = '1.2.3b14'
+version     = '1.2.4b1'
 description = 'Python wrapper for the pcap library.'
 license = { text = 'BSD license ; https://opensource.org/licenses/BSD-3-Clause' }
 authors = [

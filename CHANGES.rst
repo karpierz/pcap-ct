@@ -1,6 +1,11 @@
 Changelog
 =========
 
+1.2.4b1 (2022-09-09)
+--------------------
+- | Added 'datalink' optional parameter to pcap constructor
+  | (thank you very much easy-easy@Github for the patch!).
+
 1.2.3b14 (2022-08-30)
 ---------------------
 - Update for libpcap>=1.11.0b6
