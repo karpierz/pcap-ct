@@ -21,7 +21,8 @@ from libpcap import (DLT_NULL,   DLT_EN10MB, DLT_EN3MB,   DLT_AX25,
                      DLT_PRONET, DLT_CHAOS,  DLT_IEEE802, DLT_ARCNET,
                      DLT_SLIP,   DLT_PPP,    DLT_FDDI)
 # XXX - Linux
-from libpcap import DLT_LINUX_SLL
+from libpcap import (DLT_LINUX_SLL, DLT_LINUX_SLL2)
+
 # XXX - OpenBSD
 try:
     from libpcap import DLT_PFSYNC
@@ -49,6 +50,7 @@ dltoff = {
     DLT_LOOP:       4,
     DLT_RAW:        0,
     DLT_LINUX_SLL: 16,
+    DLT_LINUX_SLL2: 20,
 }
 
 
@@ -95,11 +97,13 @@ class pcap:
                   (Default: no timeout)
     immediate -- disable buffering, if possible
     timestamp_in_ns -- report timestamps in integer nanoseconds
+    datalink -- manually set datalink type (eg for capture "any" interface, set to SLL2, will return interface where packet is captured)
+
     """
 
     def __init__(self, name=None, snaplen=65535, promisc=True,
                  timeout_ms=0, immediate=False, rfmon=False,
-                 timestamp_in_ns=False):
+                 timestamp_in_ns=False, datalink=None):
         """Open a handle to a packet capture descriptor."""
 
         global dltoff
@@ -175,6 +179,10 @@ class pcap:
             self.__precision_scale_ns = 1
         else:
             raise OSError("couldn't determine timestamp precision")
+
+        if datalink is not None:
+            _pcap.set_datalink(self.__pcap, datalink)
+
         try:
             self.__dloff = dltoff[_pcap.datalink(self.__pcap)]
         except KeyError:
