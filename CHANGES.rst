@@ -1,6 +1,14 @@
 Changelog
 =========
 
+1.3.0b2 (2024-08-13)
+--------------------
+- Add support for Python 3.12 and 3.13
+- Drop support for Python 3.7
+- Add support for PyPy 3.9 and 3.10
+- Drop support for PyPy 3.7 and 3.8
+- Setup (dependencies) update.
+
 1.3.0b1 (2022-09-10)
 --------------------
 - | Support for libpcap.set_buffer_size() via 'buffer_size'

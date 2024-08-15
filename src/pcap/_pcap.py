@@ -1,6 +1,5 @@
-# Copyright (c) 2016-2022, Adam Karpierz
-# Licensed under the BSD license
-# https://opensource.org/licenses/BSD-3-Clause
+# Copyright (c) 2016 Adam Karpierz
+# SPDX-License-Identifier: BSD-3-Clause
 
 """\
 packet capture library
@@ -61,8 +60,9 @@ class bpf:
 
     def __init__(self, filter, dlt=DLT_RAW):  # noqa: A002 # char *filter
         """Initializer."""
-        if _pcap_ex.compile_nopcap(65535, dlt, ct.byref(self.fcode),
-                                   ct.c_char_p(filter), 1, 0) < 0:
+        ret = _pcap_ex.compile_nopcap(65535, dlt, ct.byref(self.fcode),
+                                      ct.c_char_p(filter), 1, 0)
+        if ret < 0:
             raise IOError("bad filter")
 
     def __del__(self):
@@ -112,6 +112,7 @@ class pcap:
 
         global dltoff
 
+        self.__nonblock = False
         self.__ebuf = ct.create_string_buffer(_pcap.PCAP_ERRBUF_SIZE)
 
         if not name:
@@ -194,8 +195,10 @@ class pcap:
         except KeyError:
             self.__dloff = 0  # <AK>: added
 
-        if immediate and _pcap_ex.immediate(self.__pcap) < 0:
-            raise OSError("couldn't enable immediate mode")
+        if immediate:
+            ret = _pcap_ex.immediate(self.__pcap)
+            if ret < 0:
+                raise OSError("couldn't enable immediate mode")
 
     def __del__(self):
         """Destructor."""
@@ -256,9 +259,11 @@ class pcap:
         """Set BPF-format packet capture filter."""
         fcode = _pcap.bpf_program()
         self.__filter = value.encode("utf-8")
-        if _pcap.compile(self.__pcap, ct.byref(fcode), self.__filter, optimize, 0) < 0:
+        ret = _pcap.compile(self.__pcap, ct.byref(fcode), self.__filter, optimize, 0)
+        if ret < 0:
             raise OSError(self.geterr())
-        if _pcap.setfilter(self.__pcap, ct.byref(fcode)) < 0:
+        ret = _pcap.setfilter(self.__pcap, ct.byref(fcode))
+        if ret < 0:
             raise OSError(self.geterr())
         _pcap.freecode(ct.byref(fcode))
 
@@ -268,7 +273,8 @@ class pcap:
             _pcap.setdirection
         except AttributeError:
             return False
-        return _pcap.setdirection(self.__pcap, direction) == 0
+        ret = _pcap.setdirection(self.__pcap, direction)
+        return (ret == 0)
 
     def setnonblock(self, nonblock=True):
         """Set non-blocking capture mode."""
@@ -276,18 +282,22 @@ class pcap:
             _pcap.setnonblock
         except AttributeError:
             return
-        _pcap.setnonblock(self.__pcap, nonblock, self.__ebuf)
+        ret = _pcap.setnonblock(self.__pcap, nonblock, self.__ebuf)
+        if ret < 0:
+            raise OSError(self.__ebuf.value.decode("utf-8", "ignore"))
+        self.__nonblock = bool(nonblock)
 
     def getnonblock(self) -> bool:
         """Return non-blocking capture mode as boolean."""
         try:
             _pcap.getnonblock
         except AttributeError:
-            return False
+            return self.__nonblock
         ret = _pcap.getnonblock(self.__pcap, self.__ebuf)
         if ret < 0:
             raise OSError(self.__ebuf.value.decode("utf-8", "ignore"))
-        return ret != 0
+        self.__nonblock = (ret != 0)
+        return self.__nonblock
 
     def datalink(self):
         """Return datalink type (DLT_* values)."""
@@ -330,9 +340,10 @@ class pcap:
 
     def sendpacket(self, buf) -> int:
         """Send a raw network packet on the interface."""
-        if _pcap.sendpacket(self.__pcap,
-                            ct.cast(ct.c_char_p(buf), ct.POINTER(ct.c_ubyte)),
-                            len(buf)) == -1:
+        ret = _pcap.sendpacket(self.__pcap,
+                               ct.cast(ct.c_char_p(buf), ct.POINTER(ct.c_ubyte)),
+                               len(buf))
+        if ret == -1:
             raise OSError(self.geterr())
         return len(buf)
 
@@ -341,7 +352,8 @@ class pcap:
         dropped, and dropped by the interface.
         """
         pstat = _pcap.stat()
-        if _pcap.stats(self.__pcap, ct.byref(pstat)) < 0:
+        ret = _pcap.stats(self.__pcap, ct.byref(pstat))
+        if ret < 0:
             raise OSError(self.geterr())
         return (pstat.ps_recv, pstat.ps_drop, pstat.ps_ifdrop)
 
