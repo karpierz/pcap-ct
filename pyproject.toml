@@ -101,7 +101,7 @@ pcap = [
 
 [tool.setuptools.exclude-package-data]
 '*' = ['*.c','*.h','*.cpp','*.hpp','*.cxx','*.hxx','*.pyx','*.pxd']
-libpcap = [
+pcap = [
 ]
 
 [tool.coverage.run]
