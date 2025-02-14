@@ -1,6 +1,13 @@
 Changelog
 =========
 
+1.3.0b3 (2025-02-14)
+--------------------
+- Drop support for Python 3.8
+- 100% code linting.
+- Copyright year update.
+- Setup (dependencies) update.
+
 1.3.0b2 (2024-08-13)
 --------------------
 - Add support for Python 3.12 and 3.13

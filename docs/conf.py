@@ -34,7 +34,7 @@ release = about.__version__
 
 # If your documentation needs a minimal Sphinx version, state it here.
 #
-needs_sphinx = '3.4.3'
+needs_sphinx = '7.4.7'
 
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
@@ -48,6 +48,7 @@ extensions = [
    #'sphinx.ext.coverage',
     'sphinx.ext.ifconfig',
     'sphinx.ext.napoleon',
+    'sphinx_autodoc_typehints',
    #'sphinx_toolbox',
     'sphinx_tabs.tabs',
     'sphinx_copybutton',

@@ -16,9 +16,9 @@ import sys
 import struct
 import ctypes as ct
 
-from libpcap import (DLT_NULL,   DLT_EN10MB, DLT_EN3MB,   DLT_AX25,
-                     DLT_PRONET, DLT_CHAOS,  DLT_IEEE802, DLT_ARCNET,
-                     DLT_SLIP,   DLT_PPP,    DLT_FDDI)
+from libpcap import (DLT_NULL,   DLT_EN10MB, DLT_EN3MB,  # noqa: F401
+                     DLT_AX25,   DLT_PRONET, DLT_CHAOS, DLT_IEEE802,
+                     DLT_ARCNET, DLT_SLIP,   DLT_PPP,   DLT_FDDI)
 # XXX - Linux
 from libpcap import (DLT_LINUX_SLL, DLT_LINUX_SLL2)
 
@@ -30,7 +30,7 @@ except ImportError:
 from libpcap import DLT_PFLOG
 from libpcap import DLT_RAW
 from libpcap import DLT_LOOP
-from libpcap import PCAP_D_INOUT, PCAP_D_IN, PCAP_D_OUT
+from libpcap import PCAP_D_INOUT, PCAP_D_IN, PCAP_D_OUT  # noqa: F401
 from libpcap import PCAP_TSTAMP_PRECISION_MICRO, PCAP_TSTAMP_PRECISION_NANO
 
 import libpcap as _pcap
@@ -223,7 +223,7 @@ class pcap:
         return self.__dloff
 
     @property  # noqa: A003
-    def filter(self) -> str:
+    def filter(self) -> str:  # noqa: A003
         """Current packet capture filter."""
         return self.__filter.decode("utf-8")
 

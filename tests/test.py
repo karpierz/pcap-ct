@@ -1,3 +1,6 @@
+# Copyright (c) 2016 Adam Karpierz
+# SPDX-License-Identifier: BSD-3-Clause
+
 import sys
 import binascii
 import struct
