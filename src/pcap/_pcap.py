@@ -110,8 +110,6 @@ class pcap:
                  timestamp_in_ns=False, buffer_size=0, datalink=None):
         """Open a handle to a packet capture descriptor."""
 
-        global dltoff
-
         self.__nonblock = False
         self.__ebuf = ct.create_string_buffer(_pcap.PCAP_ERRBUF_SIZE)
 
