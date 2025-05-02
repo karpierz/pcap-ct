@@ -1,6 +1,14 @@
 Changelog
 =========
 
+1.3.0b4 (2025-05-01)
+--------------------
+- Add support for Python 3.14
+- Drop support for Python 3.9 (due to compatibility issues).
+- Update readthedocs's python to version 3.13
+- Update tox's base_python to version 3.13
+- Setup (dependencies) update.
+
 1.3.0b3 (2025-02-14)
 --------------------
 - Drop support for Python 3.8
